@@ -7,14 +7,23 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(move)
+#organizating, filtering, cleaning data
 library(plyr)
 library(dplyr) #deleted and re installed rlang
 library(stats)
 library(devtools) #deleted and re installed htmltools
+#Movebank data retrieval and manipulation
+library(move)
+#NMDS dispersal model
 library(migrateR) #could not build vignettes. Also used force = T and updated some packages.
+#static map
 library(ggmap)
 library(mapproj)
+#interactive maps
+library(sp)
+library(leaflet)
+library(rgdal)
+library(raster)
 ```
 
 ### Sign into Movebank 
@@ -40,13 +49,24 @@ Bierregaard_Osprey<-getMovebankData(study ="Osprey Bierregaard North and South A
                                     animalName = c(y$animal_local_identifier),
                                     login = loginStored, removeDuplicatedTimestamps=TRUE) #This takes some time, but downloads data directly from Movebank. 
 str(Bierregaard_Osprey) #perfect!
-#plot using ggmap
+#plot static map using ggmap
 require(mpproj)
 Bierregaard_Osprey_DF<-as.data.frame(Bierregaard_Osprey)
-str(Bierregaard_Osprey_DF)
 m<- get_map(bbox(extent(Bierregaard_Osprey)*1.1), source = "stamen")
 ggmap(m) +
   geom_path(data = Bierregaard_Osprey_DF, aes(x=location_long, y=location_lat)) #NICE
+
+
+#plot interactive map using leaflet - files to large, don't run this code yet...need line files instead of point files...
+wgs84<-CRS("+proj=longlat +datum=WGS84") #GCS in WGS 1984
+azim_orign = CRS("+proj=aeqd +lat_0=25 +lon_0=-90 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs") #PCS in custom azimuthal equidistant projection
+xy<-Bierregaard_Osprey_DF[,c("location_long", "location_lat")]
+Bierregaard_Osprey_Projected<-SpatialPointsDataFrame(coords = xy, data = Bierregaard_Osprey_DF,proj4string = azim_orign)
+crs(Bierregaard_Osprey_Projected)
+
+leaflet() %>%
+  addTiles() %>%
+  addMarkers(data = Bierregaard_Osprey_Projected)
 ```
 
 ### References
