@@ -7,4 +7,50 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(move)
+library(plyr)
+library(dplyr) #deleted and reinstalled rlang
+library(stats)
+
+library(devtools)
+```
+
+```{r, include=FALSE}
+#intall the migrateR package
+my.dir<-"C:/users/lhaka2/Desktop/ThesisScript/"
+setwd(my.dir)
+migrateR<-"migrateR_1.0.9.tar.gz"
+install.packages("https://github.com/Hakalar2000/OspreyMigrationStrategies/blob/main/migrateR_1.0.9.tar.gz")
+install.packages(migrateR, type = "source")
+library(migrateR)
+#library(help = "migrateR")
+```
+
+Sign into Movebank
+```{r, echo=FALSE}
+loginStored <- movebankLogin(username = "lhaka2", password = "!ShamaJ2016!")
+```
+
+Load in data from Movebank and summarize data
+```{r}
+#Download data from Movebank
+getMovebankStudy(study ="Osprey Bierregaard North and South America", login = loginStored)
+Bierregaard_Osprey<-getMovebankData(study ="Osprey Bierregaard North and South America", 
+                                    login = loginStored, removeDuplicatedTimestamps=TRUE) #This takes some time
+getMovebankSensors(study ="Osprey Bierregaard North and South America", login = loginStored)
+
+Bierregaard_Osprey_summary<-getMovebankReferenceTable(study ="Osprey Bierregaard North and South America", login = loginStored, allAttributes = FALSE)
+
+str(Bierregaard_Osprey_summary) #data frame
+```
+
+Summarize Movebank Data
+```{r}
+Bierregaard_Osprey_summary<-filter(Bierregaard_Osprey_summary, tag_comments != "Doppler")
+y<-Bierregaard_Osprey_summary %>%
+  group_by(animal_local_identifier) %>%
+  summarise(animal_sex = first(stats::na.omit(animal_sex)),
+            animal_life_stage = first(stats::na.omit(animal_life_stage)))
+y
+table(y$animal_life_stage, y$animal_sex)
 ```
