@@ -9,48 +9,47 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(move)
 library(plyr)
-library(dplyr) #deleted and reinstalled rlang
+library(dplyr) #deleted and re installed rlang
 library(stats)
-
-library(devtools)
+library(devtools) #deleted and re installed htmltools
+library(migrateR) #could not build vignettes. Also used force = T and updated some packages.
+library(ggmap)
+library(mapproj)
 ```
 
-```{r, include=FALSE}
-#intall the migrateR package
-my.dir<-"C:/users/lhaka2/Desktop/ThesisScript/"
-setwd(my.dir)
-migrateR<-"migrateR_1.0.9.tar.gz"
-install.packages("https://github.com/Hakalar2000/OspreyMigrationStrategies/blob/main/migrateR_1.0.9.tar.gz")
-install.packages(migrateR, type = "source")
-library(migrateR)
-#library(help = "migrateR")
-```
-
-Sign into Movebank
+### Sign into Movebank 
 ```{r, echo=FALSE}
 loginStored <- movebankLogin(username = "lhaka2", password = "!ShamaJ2016!")
 ```
 
-Load in data from Movebank and summarize data
+### Explore Movebank Data using dplyr
 ```{r}
-#Download data from Movebank
-getMovebankStudy(study ="Osprey Bierregaard North and South America", login = loginStored)
-Bierregaard_Osprey<-getMovebankData(study ="Osprey Bierregaard North and South America", 
-                                    login = loginStored, removeDuplicatedTimestamps=TRUE) #This takes some time
-getMovebankSensors(study ="Osprey Bierregaard North and South America", login = loginStored)
-
-Bierregaard_Osprey_summary<-getMovebankReferenceTable(study ="Osprey Bierregaard North and South America", login = loginStored, allAttributes = FALSE)
-
+getMovebankStudy(study ="Osprey Bierregaard North and South America", login = loginStored) #this provides me with the metadata in the studies page on movebank
+Bierregaard_Osprey_summary<-getMovebankReferenceTable(study ="Osprey Bierregaard North and South America", login = loginStored, allAttributes = FALSE) #summary of individuals within the Movebank data
 str(Bierregaard_Osprey_summary) #data frame
+getMovebankSensorsAttributes(study="Osprey Bierregaard North and South America",login=loginStored) #sensor_type_id for GPS that we will need is 653. 7842954 is the GPS engineering data and 82798	is Argos data.
+y<-filter(Bierregaard_Osprey_summary, Bierregaard_Osprey_summary$sensor_type_id == 653) #we only want individuals that have GPS/GSM data. no Doppler shift
+y #view the table
+table(y$animal_life_stage, y$animal_sex) #summarize further
 ```
 
-Summarize Movebank Data
+### Load in and map data from Movebank
 ```{r}
-Bierregaard_Osprey_summary<-filter(Bierregaard_Osprey_summary, tag_comments != "Doppler")
-y<-Bierregaard_Osprey_summary %>%
-  group_by(animal_local_identifier) %>%
-  summarise(animal_sex = first(stats::na.omit(animal_sex)),
-            animal_life_stage = first(stats::na.omit(animal_life_stage)))
-y
-table(y$animal_life_stage, y$animal_sex)
+#Download data from Movebank for GPS tracked individuals
+Bierregaard_Osprey<-getMovebankData(study ="Osprey Bierregaard North and South America",
+                                    animalName = c(y$animal_local_identifier),
+                                    login = loginStored, removeDuplicatedTimestamps=TRUE) #This takes some time, but downloads data directly from Movebank. 
+str(Bierregaard_Osprey) #perfect!
+#plot using ggmap
+require(mpproj)
+Bierregaard_Osprey_DF<-as.data.frame(Bierregaard_Osprey)
+str(Bierregaard_Osprey_DF)
+m<- get_map(bbox(extent(Bierregaard_Osprey)*1.1), source = "stamen")
+ggmap(m) +
+  geom_path(data = Bierregaard_Osprey_DF, aes(x=location_long, y=location_lat)) #NICE
 ```
+
+### References
+
+* Help using the move package to download data from Movebank: <https://cran.r-project.org/web/packages/move/vignettes/browseMovebank.html> 
+* Navigating and using data from the move package: <https://cran.r-project.org/web/packages/move/vignettes/move.html>
