@@ -7,23 +7,31 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+#Data retrieval and manipulation
+library(move)
+library(readr) #download CSV using URL link from github
 #organizating, filtering, cleaning data
 library(plyr)
 library(dplyr) #deleted and re installed rlang
 library(stats)
 library(devtools) #deleted and re installed htmltools
-#Movebank data retrieval and manipulation
-library(move)
+library(lutz) #time zone lookup
+library(solaR) #calculate solar time
 #NMDS dispersal model
 library(migrateR) #could not build vignettes. Also used force = T and updated some packages.
 #static map
 library(ggmap)
 library(mapproj)
+library(ggplot2)
+library(sf)
+library(tmap)
 #interactive maps
 library(sp)
 library(leaflet)
 library(rgdal)
 library(raster)
+#Misc
+library(usethis)
 ```
 
 ### Sign into Movebank 
@@ -37,9 +45,9 @@ getMovebankStudy(study ="Osprey Bierregaard North and South America", login = lo
 Bierregaard_Osprey_summary<-getMovebankReferenceTable(study ="Osprey Bierregaard North and South America", login = loginStored, allAttributes = FALSE) #summary of individuals within the Movebank data
 str(Bierregaard_Osprey_summary) #data frame
 getMovebankSensorsAttributes(study="Osprey Bierregaard North and South America",login=loginStored) #sensor_type_id for GPS that we will need is 653. 7842954 is the GPS engineering data and 82798	is Argos data.
-y<-filter(Bierregaard_Osprey_summary, Bierregaard_Osprey_summary$sensor_type_id == 653) #we only want individuals that have GPS/GSM data. no Doppler shift
-y #view the table
-table(y$animal_life_stage, y$animal_sex) #summarize further
+Bierregaard_Osprey_summary<-filter(Bierregaard_Osprey_summary, Bierregaard_Osprey_summary$sensor_type_id == 653) #we only want individuals that have GPS/GSM data. no Doppler shift
+Bierregaard_Osprey_summary #view the table
+table(Bierregaard_Osprey_summary$animal_life_stage, Bierregaard_Osprey_summary$animal_sex) #summarize further
 ```
 
 ### Load in and map data from Movebank
@@ -52,24 +60,73 @@ str(Bierregaard_Osprey) #perfect!
 #plot static map using ggmap
 require(mpproj)
 Bierregaard_Osprey_DF<-as.data.frame(Bierregaard_Osprey)
-m<- get_map(bbox(extent(Bierregaard_Osprey)*1.1), source = "stamen")
+?get_map
+m<- get_map(bbox(extent(Bierregaard_Osprey)*1.1), source = "stamen", zoom = 3)
 ggmap(m) +
   geom_path(data = Bierregaard_Osprey_DF, aes(x=location_long, y=location_lat)) #NICE
 
-
 #plot interactive map using leaflet - files to large, don't run this code yet...need line files instead of point files...
-wgs84<-CRS("+proj=longlat +datum=WGS84") #GCS in WGS 1984
-azim_orign = CRS("+proj=aeqd +lat_0=25 +lon_0=-90 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs") #PCS in custom azimuthal equidistant projection
 xy<-Bierregaard_Osprey_DF[,c("location_long", "location_lat")]
 Bierregaard_Osprey_Projected<-SpatialPointsDataFrame(coords = xy, data = Bierregaard_Osprey_DF,proj4string = azim_orign)
 crs(Bierregaard_Osprey_Projected)
 
-leaflet() %>%
-  addTiles() %>%
-  addMarkers(data = Bierregaard_Osprey_Projected)
+#leaflet() %>%
+  #addTiles() %>%
+  #addMarkers(data = Bierregaard_Osprey_Projected)
 ```
+
+## Load in Data from my Git Hub repository
+```{r}
+#personal access token if needed: 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
+#how the fuck to I pull a file from my personal repo...
+urlfile<-"https://raw.githubusercontent.com/Hakalar2000/OspreyMigrationStrategies/main/IL_OspreyData_CompleteMigrations.csv?token=GHSAT0AAAAAACIMXW5N7UQLVRI3ZJBCYI4OZI7APQQ"
+IL_OspreyData<-read_csv(url(urlfile))
+IL_OspreyData<-as.data.frame(IL_OspreyData)
+str(IL_OspreyData)
+```
+## Format IL osprey data
+```{r}
+#change column names
+names(IL_OspreyData) [names(IL_OspreyData) == "Longitude(E)"] <- "Lon"
+names(IL_OspreyData) [names(IL_OspreyData) == "Latitude(N)"] <- "Lat"
+names(IL_OspreyData) [names(IL_OspreyData) == "Altitude(m)"] <- "Alt"
+#Remove NAs from lat/lon
+IL_OspreyData<-filter(IL_OspreyData, Lat !=0 | Lon != 0)
+#Create timestamp
+IL_OspreyData$TimeStamp<-as.POSIXct(IL_OspreyData$TimeStamp, format = "%m/%d/%Y %H:%M", tz = "UTC")
+class(IL_OspreyData$TimeStamp)
+#Add timezone
+IL_OspreyData$TimeZone<-tz_lookup_coords(IL_OspreyData$Lat, IL_OspreyData$Lon, method = "accurate")
+table(IL_OspreyData$TimeZone)
+#Calculate Solar Time
+IL_OspreyData$SolarTime<-local2Solar(IL_OspreyData$TimeStamp, IL_OspreyData$Lon)
+IL_OspreyData$SolarTime<-as.POSIXct(IL_OspreyData$SolarTime, format = "%m/%d/%Y %H:%M")
+class(IL_OspreyData$SolarTime)
+#filter erroneous points: Erroneous points are those with unrealistically high speed and turning angle (course). For course (sometimes mistakenly referred to as heading) we will look at the 90th percentile of points as suggested by Gupte et al., 2021. Course is measured as the angle from magnetic north (clockwise).A course of 0 indicates no movement. For speed I used Kerlinger 1989 to determine that the maximum recorded flight speed of an osprey was 33.4 meters/second (I converted this to knots and got 64.92 since speed is estimated in knots in my data).
+quantile(IL_OspreyData$Course, probs = 0.9) #got 250
+IL_OspreyData<-filter(IL_OspreyData, Speed < 65 & Course < 250)
+str(IL_OspreyData)
+#Plot and look for visual outliers
+wgs84<-CRS("+proj=longlat +datum=WGS84") 
+#GCS in WGS 1984
+azim_orign = CRS("+proj=aeqd +lat_0=25 +lon_0=-90 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs") #PCS in custom azimuthal equidistant projection
+IL_OspreyData_sf<-st_as_sf(x=IL_OspreyData, coords = c("Lon", "Lat"), crs = wgs84)
+IL_OspreyData_sf<-st_transform(IL_OspreyData_sf, azim_orign)
+#Obtain world data
+data(World)
+world_sf<-st_transform(World, azim_orign)
+ggplot() +
+  geom_sf(data = world_sf, fill = "white") +
+  geom_sf(data = IL_OspreyData_sf, size = 1, aes(color = ID)) +
+  coord_sf(datum = st_crs(azim_orign), xlim = c(-3000000, 4000000), ylim = c(2000000, -2500000)) +
+  theme(legend.position = "bottom", legend.text = element_text(size = 7)) +
+  labs(color = "ID") #there is one erroneous point that must be removed at a high lat/long
+```
+
 
 ### References
 
 * Help using the move package to download data from Movebank: <https://cran.r-project.org/web/packages/move/vignettes/browseMovebank.html> 
 * Navigating and using data from the move package: <https://cran.r-project.org/web/packages/move/vignettes/move.html>
+*Download a CSV file from github: <https://lokraj.me/post/download-github-data/>
+*Github and RStudio interface: <https://rfortherestofus.com/2021/02/how-to-use-git-github-with-r/>
