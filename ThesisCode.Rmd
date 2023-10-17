@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(move)
 library(readr) #download CSV using URL link from github
 library(sp)
+library(moveVis)
 #organizating, filtering, cleaning data
 library(plyr)
 library(dplyr) #deleted and re installed rlang
@@ -90,6 +91,7 @@ library(adehabitatLT) #create an ltraj object needed to run functions in migrate
 library(devtools) #Needed to install migrateR. Deleted and re installed htmltools
 library(migrateR) #Could not build vignettes. Also used force = T and updated some packages.See references for link to vignettes and github code repository with download instructions. 
 library(data.table) #data frame list manipulation
+library(moveVis) #for converting a dataframe into a move object
 ```
 
 ## Downloading and Filter Tracking Data
@@ -310,7 +312,6 @@ length(unique(Osprey_Data$migrationEvent))
 
 #Remove migration events where migration did not occur (or are from 2007)
 remove<-c("Pearl 2013", "Rafael 2009","Luke 2007", "Aster 2017", "Chester 2014", "Felix 2007", "Claws 2007", "Claws 2008", "Mackenzie 2013", "Trepassey 2016", "Tucker 2011", "Jocelyn 2016", "Rammie 2013", "Snowy 2012", "Thatcher 2011", "Penelope 2009", "Buck 2010", "Belle 2011", "Flow 2015", "Art 2013", "Artoo 2014", "Crabby 2015", "Borealis 2018", "Daphne 2017", "Weber 2014", "Nick 2017", "Ron 2015", "Woody 2015", "X586.Brighton_Barb 2015", "X934.Kensington.Pebbles 2017", "X423.Humphries_DTE_Ozzie 2015", "X139005.Monroe.Julie 2017")
-length(remove)
 
 # factor levels will be set to 0 in the data frame, but won't actually be removed. I have to change to character data format to remove rows.
 Osprey_Data$migrationEvent<-as.character(Osprey_Data$migrationEvent)
@@ -331,7 +332,6 @@ False<-st_coordinates(Osprey_Data_sf)
 False<-as.data.frame(False)
 Osprey_Data$X<-False$X/1000 #/1000 to equal kilometers. 
 Osprey_Data$Y<-False$Y/1000
-
 #Make a spatial data frame using the package 'sp'. 'adehabitatLR' requires an sp object rather than an sf object.  
 Osprey_trajr<-Osprey_Data
 coordinates(Osprey_trajr) <- c("X", "Y")
@@ -347,15 +347,19 @@ Run the dispersal model and compared start/end dates with final recorded date
 ```{r}
 #Run the migrateR dispersal model
 Osprey_nsd<-mvmtClass(Osprey_trajr)
-Osprey_dispersal<-mvmt2dt(Osprey_nsd, mod = "disperser") #Note that some individuals did not fit dispersal patterns.
-Osprey_dispersal
+Osprey_dispersal<-mvmt2dt(Osprey_nsd, mod = "disperser") #Note that some individuals did not fit dispersal patterns
+length(Osprey_dispersal) #Some trajectories did not fit the dispersal model. These birds did not get far enough into migration for start and end dates to be determined. These 6 individuals will need to be removed: "Caleb 2013", "Layla 2017", "Rock 2017", "X131008.Lux.Arbor.In.Flight 2017", "X401.Houghton_Harvest 2014", "X610.Monroe_DTE_Clawdia 2015"
 
 #extract the start and end dates for each migration event and create a dataframe for each migration event with start and end date as columns.
-Osprey_StartEnd<-rbindlist(Osprey_dispersal, idcol = "ID")
-Osprey_StartEnd #312 rows
+Osprey_StartEnd<-rbindlist(Osprey_dispersal, idcol = "migrationEvent")
 Start_End<-rep(c("Start", "End"), times = nrow(Osprey_StartEnd)/2) #divide by two since this will be the number of EACH character that will appear. 
 Osprey_StartEnd$Start_End<-Start_End
-Osprey_StartEnd<-reshape(Osprey_StartEnd, idvar = "ID", timevar = "Start_End", direction = "wide")
+Osprey_StartEnd<-reshape(Osprey_StartEnd, idvar = "migrationEvent", 
+                         timevar = "Start_End", direction = "wide")
+
+#Remove individuals that did not have model fits:
+remove2<-c("Caleb 2013", "Layla 2017", "Rock 2017", "X131008.Lux.Arbor.In.Flight 2017", "X401.Houghton_Harvist 2014", "X610.Monroe_DTE_Clawdia 2015")
+Osprey_Data<-Osprey_Data[!(Osprey_Data$migrationEvent %in% remove2), ] #left with 142 migration events.
 
 # compare the end timestamp to the final timestamp of each migration event. If the end date = final timestamp then the migration was not completed. Mark this in the excel file. 
 Osprey_Data_FinalTrackDay<-Osprey_Data %>%
@@ -363,22 +367,72 @@ Osprey_Data_FinalTrackDay<-Osprey_Data %>%
   slice_max(timestamp)
 Osprey_Data_FinalTrackDay$FinalDay<-Osprey_Data_FinalTrackDay$timestamp
 
-Osprey_StartEnd<-merge(Osprey_StartEnd, Osprey_Data_FinalTrackDay, by.x = "ID", by.y = "migrationEvent")
-Osprey_StartEnd<-Osprey_StartEnd[, c("ID", "date.Start", "date.End", "FinalDay", "month", "year", "location_lat", "location_long")]
-
-Osprey_StartEnd #remove Art 2013, Daphne 2017 and birds that did not fit the dispersal model.
-
+Osprey_StartEnd<-merge(Osprey_StartEnd, Osprey_Data_FinalTrackDay, by = "migrationEvent")
+Osprey_StartEnd<-Osprey_StartEnd[, c("migrationEvent", "date.Start", "date.End", "FinalDay", "month", "year", "location_lat", "location_long")]
 ```
 
-Filter the data further by removing individuals that did not fit the dispersal model. Make sure all individuals that had incomplete migrations match what is on the metadata sheet. 
+Now that we have start and end date we can filter out non-migration points. It should be noted that migration is defined by this model. The model is fairly simple and cannot take into account the actual complexity of migration events. For example, 26R spent 1 month at a location outside of his natal home range before continuing on migration without going back to his home range. Leaving his natal home range could be considered the start of his migration, or the directional flight to his wintering grounds from this pre-migratory stopover could be considered the start of migration. The model provides the later interpretation. 
+
+Filter GPS points by start/end dates and create 4 different datasets with different sampling frequencies. 
 ```{r}
-#Keep only GPS fixes that fall within the start-end timestamp range for each migration event.
+#Keep only GPS fixes that fall within the start-end day range for each migration event. We could go to seconds/minutes ect., however we will use duration in days, so may as well keep all timestamps within the start/end day. 
+events<-unique(Osprey_Data$migrationEvent)
+df<-data.frame() #create an empty dataframe to store results
 
-#Regularize the time series since 1-hour frequencies are not perfect
+for (i in events) {
+  y = filter(Osprey_Data, migrationEvent == i)
+  x = filter(Osprey_StartEnd, migrationEvent == i)
+  z = filter(y, timestamp <= as.Date(x$date.End) & timestamp >= as.Date(x$date.Start)) #We find the start/end day
+  df = rbind(df, z) #binds all iteration outputs into a single dataframe
+}
 
-#Thin trajectory data to create four different sampling frequencies
+length(unique(df$migrationEvent)) #142 migration events and 115 individuals
+
+#arrange and clean data format
+df %>%
+  group_by(migrationEvent) %>%
+  arrange(desc(ymd_hms(df$timestamp)))
+names(df) [names(df) == "migrationEvent"] <- "individual.local.identifier"
 ```
 
+
+```{r}
+#Convert to a move object. To do this I had to use the moveVis package since the move function does not work well with actual dataframes. The move package has a number of very convinient functions that allow me to calculate a number of different movement characteristics and prep the data from analysis.
+OSPR<-df2move(df,
+        proj = wgs84, 
+        x = "location_long", y = "location_lat", 
+        time = "timestamp", track_id = "individual.local.identifier")
+
+#regularize the time series through the move package. To do this we will have to apply the regularization to each move object within the movestack (annoying, I know). The interpolate time function fills in positional points along a standard time series. We will use 1-hour to do this. 
+Stacked<-list() #empty list for output
+
+for (i in 1:142) {
+  x<-interpolateTime(OSPR[[i]], time=as.difftime(1, units="hours"), spaceMethod='rhumbline')
+  print(plot(OSPR[[i]], col="red",pch=20, main="By time interval"))
+  print(points(x))
+  print(lines(OSPR[[i]], col="red"))
+  print(legend("bottomleft", c("True locations", "Interpolated locations"), 
+               col=c("red", "black"), pch=c(20,1))) #all points have a black outline which is annoying
+  Stacked[[i]] = x
+}
+
+#convert output list of move objects into a move stack.
+OSPR_1hour<-moveStack(Stacked) 
+str(OSPR_1hour@trackId) #check that all migration events are accounted for
+```
+
+#### Thin the trajectory to different sampling frequencies
+```{r}
+#3-hour sampling frequency
+Stacked_3hr<-list()
+  
+for (i in 1:142) {
+  x<-thinTrackTime(OSPR_1hour[[i]], interval = as.difftime(3, units="hours"),
+                          tolerance = as.difftime(15, units="mins"), criteria = "closest")
+  Stacked_3hr[[i]] = x
+}
+
+```
 
 The data set is now filtered and ready for analysis!
 
