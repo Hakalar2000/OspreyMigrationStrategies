@@ -1,5 +1,5 @@
 ---
-title: "Thesis Code"
+title: "Lewis' Thesis Code"
 author: "Lewis Hakam"
 date: "10/3/2023"
 output: html_document
@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #Data retrieval and manipulation
 library(move)
 library(readr) #download CSV using URL link from github
+library(sp)
 #organizating, filtering, cleaning data
 library(plyr)
 library(dplyr) #deleted and re installed rlang
@@ -17,74 +18,243 @@ library(stats)
 library(devtools) #deleted and re installed htmltools
 library(lutz) #time zone lookup
 library(solaR) #calculate solar time
-#NMDS dispersal model
+library(lubridate)
+find_mode <- function(x) {
+  u <- unique(x)
+  tab <- tabulate(match(x, u))
+  u[tab == max(tab)]
+} #no built in function for mode in R so I got this one from the web. 
+library(data.table)
+#Movement models
 library(migrateR) #could not build vignettes. Also used force = T and updated some packages.
+library(adehabitatLT)
 #static map
 library(ggmap)
 library(mapproj)
 library(ggplot2)
 library(sf)
 library(tmap)
-#interactive maps
-library(sp)
-library(leaflet)
-library(rgdal)
-library(raster)
-#Misc
-library(usethis)
+wgs84<-CRS("+proj=longlat +datum=WGS84") #GCS in WGS 1984
+azim_orign = CRS("+proj=aeqd +lat_0=17.87 +lon_0=-67.87 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs") #PCS in custom azimuthal equidistant projection
+data(World) #world data with country polygons needed for mapping
+world_sf<-st_transform(World, azim_orign) #projected world data
+plotshit<-function(y) {
+  ggplot(y) +
+    geom_sf(data = world_sf, fill = "white") +
+    geom_sf(size = 1, aes(color = year)) +
+    coord_sf(datum = st_crs(azim_orign), xlim = c(-2000000, 8000000), ylim = c(3000000, -3000000)) +
+    theme(legend.position = "bottom", legend.text = element_text(size = 7)) +
+    labs(color = "year") +
+    ggtitle(paste0(y$trackId))
+} #function for batch plotting in a for loop
+```
+## Introduction
+
+Hey there! If you are viewing this article, you are interested in how I analyzed osprey tracking data for my final thesis, completed in Spring 2024. I will guide through a step by step process. I have used R Markdown, which may be new for you. This document will not go over the nuances I used to code the Markdown file. For simplicity and privacy, not all code lines are shown in the Rmarkdown output. If you want to see the entire code script, you will need to open the RStudio project, accessible through the Osprey Shared Drive or by contacting me directly. I have done my best to annotate my code for easy interpret ability.
+
+
+## Packages
+Here is a list of packages and functions in the order of their first appearance that I used.You will likely have to use the function install.packages ("Package Name") before you can access the package using the library (Package Name) function. I had a few instances where I had supporting packages downloaded, but they were not up-to-date nor could I force them to update. For these packages I had to go into this PC < documents < R and locally delete the packages that were not updating and then re-install them. I've made notes next to supporting packages for which I did this. 
+
+```{r, eval=FALSE}
+library(move) #download, manipulate, and analyze telemetry data
+library(dplyr) #Filtering data via the filter() function. Deleted and re installed rlang
+library(stats) #find the median and other statistical operations
+find_mode <- function(x) {
+  u <- unique(x)
+  tab <- tabulate(match(x, u))
+  u[tab == max(tab)]
+} #no built in function for mode in R so I got this one from the web. 
+library(ggplot2) #dynamic, mapping and graphing
+library(sf) #displaying coordinate data in ggplot
+library(rgdal) #creating custom PCS via the CRS() function. 
+wgs84<-CRS("+proj=longlat +datum=WGS84") #GCS in WGS 1984, required for a PCS.
+azim_orign = CRS("+proj=aeqd +lat_0=25 +lon_0=-90 +x_0=0 +y_0=0 
+                 +ellps=WGS84 +datum=WGS84 
+                 +units=m +no_defs") #PCS in custom azimuthal equidistant projection
+library(tmap) #world polygon data
+data(World) #world data with country polygons needed for mapping
+world_sf<-st_transform(World, azim_orign) #projected world data
+plotshit<-function(y) {
+  ggplot(y) +
+    geom_sf(data = world_sf, fill = "white") +
+    geom_sf(size = 1, aes(color = year)) +
+    coord_sf(datum = st_crs(azim_orign), xlim = c(-2000000, 8000000), ylim = c(3000000, -3000000)) +
+    theme(legend.position = "bottom", legend.text = element_text(size = 7)) +
+    labs(color = "year") +
+    ggtitle(paste0(y$trackId))
+} #function for batch plotting in a for loop
+library(lubridate) #manipulate date/timestamps  the proper 
+library(solaR) #calculate solar time for IL osprey data
+library(sp) #spatial object needed for an ltraj object and to find center of data
+library(adehabitatLT) #create an ltraj object needed to run functions in migrateR
+library(devtools) #Needed to install migrateR. Deleted and re installed htmltools
+library(migrateR) #Could not build vignettes. Also used force = T and updated some packages.See references for link to vignettes and github code repository with download instructions. 
+library(data.table) #data frame list manipulation
 ```
 
-### Sign into Movebank 
+## Downloading and Filter Tracking Data
+
+#### Downloading and Exploring Data From Movebank
+First, If you do not have a Movebank account, you must make a free account before you can access any of the data.
+
+I pulled data from three sources:
+1. Bierregaard East Coast Osprey Tracking - open-access download (permission to use in publications)
+2. Barb Jensen's Michigan Osprey Tracks - open-access download (permission to use in publications)
+3. The Montana osprey Satellite Tracking Program - Permission-access only
+
+To pull data from movebank you will use the 'move' package. Before you can pull data with the move package you will need to create an object called loginStored which contains your login info. I have not included the actual code since I do not want to give out my password. Your code will look something like this:
+```{r, eval=FALSE}
+loginStored <- movebankLogin(username = "UserName", password = "Password")
+```
+
 ```{r, echo=FALSE}
 loginStored <- movebankLogin(username = "lhaka2", password = "!ShamaJ2016!")
 ```
 
-### Explore Movebank Data using dplyr
+Next you will download the Movebank study synopsis and summary tables. The synopsis can provide details on how many individuals were tracked, the time frame tracking occurred, the type of device used, and permission/privacy restrictions. The synopsis along with the Movebank study name can be located on the Movebank website along with a handy interactive map. It is possible to search for studies within R, but it is honestly easier to use the web-based platform. The summary table will provide a summary of each individual tracked per device. This means that some individuals may have multiple entries in a summary table to account for different tracking mechanisms. We can use the summary table info to fill out demographic info and determine how many individuals were tracked using GPS or GPS/GSM devices. 
 ```{r}
-getMovebankStudy(study ="Osprey Bierregaard North and South America", login = loginStored) #this provides me with the metadata in the studies page on movebank
-Bierregaard_Osprey_summary<-getMovebankReferenceTable(study ="Osprey Bierregaard North and South America", login = loginStored, allAttributes = FALSE) #summary of individuals within the Movebank data
-str(Bierregaard_Osprey_summary) #data frame
-getMovebankSensorsAttributes(study="Osprey Bierregaard North and South America",login=loginStored) #sensor_type_id for GPS that we will need is 653. 7842954 is the GPS engineering data and 82798	is Argos data.
-Bierregaard_Osprey_summary<-filter(Bierregaard_Osprey_summary, Bierregaard_Osprey_summary$sensor_type_id == 653) #we only want individuals that have GPS/GSM data. no Doppler shift
-Bierregaard_Osprey_summary #view the table
-table(Bierregaard_Osprey_summary$animal_life_stage, Bierregaard_Osprey_summary$animal_sex) #summarize further
+#download Bierregaard data Synopsis
+getMovebankStudy(study ="Osprey Bierregaard North and South America", login = loginStored)
+#download Bierregaard summary table
+Bierregaard_Osprey_summary<-getMovebankReferenceTable(study ="Osprey Bierregaard North and South America", login = loginStored, allAttributes = FALSE)
+#Explore sensor attributes and associated codes. We only want a summary of individuals with GPS tracks.
+getMovebankSensorsAttributes(study="Osprey Bierregaard North and South America",login=loginStored) #sensor_type_id for GPS that we will need is 653. 7842954 is the GPS engineering data and 82798	is Argos data. Filter the summary table to keep only individuals with the sensor_type_id of 653.
+Bierregaard_Osprey_summary<-filter(Bierregaard_Osprey_summary,
+                                   Bierregaard_Osprey_summary$sensor_type_id == 653)
+#Create a table of sex and life stage for a brief overview of how many adults/juveniles of male and female exist within the dataset.
+table(Bierregaard_Osprey_summary$animal_life_stage, Bierregaard_Osprey_summary$animal_sex)
+# While this table is helpful at a glance, I found I could fill in life stage by looking at the birth date if include and comparing it with the tracking year. I also consulted the comments for clues to age and sex. I did this by going to the environment pane and clicking on the filtered summary table to open the full table. 
 ```
 
-### Load in and map data from Movebank
 ```{r}
-#Download data from Movebank for GPS tracked individuals
+#Barb Jensen's data
+getMovebankStudy(study ="Pandion haliaetus Osprey - SouthEast Michigan", login = loginStored)
+Jensen_Osprey_summary<-getMovebankReferenceTable(study ="Pandion haliaetus Osprey - SouthEast Michigan", 
+                                                 login = loginStored, allAttributes = FALSE)
+Jensen_Osprey_summary<-filter(Jensen_Osprey_summary, Jensen_Osprey_summary$sensor_type_id == 653)
+table(Jensen_Osprey_summary$animal_sex) #22 individuals total, 11 females, 8 males, and 3 unknown
+```
+
+The summary tables give me an idea of the total number of individuals in each study and the sex and age of each individual. However, it does not tell me the number of fall migrations and whether those migrations were complete or not, does not tell if the individual started migration, and may have missing age data that can be determined from mapping the data. That said, the data sets are really large, so I can initially filter the data to make it easier to work with and plot. I will remove:
+* individuals with sampling frequencies courser than 1-hour (using mode and median)
+* GPS fixes outside of July-November (7-11)
+* erroneous points that don't meet a defined biological/practical threshold.
+
+```{r}
+#Download data from Movebank for GPS tracked individuals.This takes some time, but downloads data directly from Movebank. From the summary data, I filtered out only GPS tracked individuals. When downloading movebank data, I can specify which individuals I want in my dataset using animalName = (list of animal local identifiers)
 Bierregaard_Osprey<-getMovebankData(study ="Osprey Bierregaard North and South America",
-                                    animalName = c(y$animal_local_identifier),
-                                    login = loginStored, removeDuplicatedTimestamps=TRUE) #This takes some time, but downloads data directly from Movebank. 
-str(Bierregaard_Osprey) #perfect!
-#plot static map using ggmap
-require(mpproj)
+                                    animalName = c(Bierregaard_Osprey_summary$animal_local_identifier),
+                                    login = loginStored, removeDuplicatedTimestamps=TRUE) 
+#Get the time between consecutive locations using the move package
+list<-timeLag(Bierregaard_Osprey, units = "hours")
+#lapply function applies a function to a list.Each individual within the data set has a median or mode timelag of 1 hour or finer. I used median/mode instead of average since its inevitable that some points were missed (either because the GPS was set to turn off an night, the GPS was turned off when the bird reached a certain location, the data was collected in bursts in the case of GSM, or because the GPS could not get signal)
+sapply(list, find_mode) 
+sapply(list, median)
+#make into a data frame so I can easily filter, plot, and manipulate the data.
 Bierregaard_Osprey_DF<-as.data.frame(Bierregaard_Osprey)
-?get_map
-m<- get_map(bbox(extent(Bierregaard_Osprey)*1.1), source = "stamen", zoom = 3)
-ggmap(m) +
-  geom_path(data = Bierregaard_Osprey_DF, aes(x=location_long, y=location_lat)) #NICE
-
-#plot interactive map using leaflet - files to large, don't run this code yet...need line files instead of point files...
-xy<-Bierregaard_Osprey_DF[,c("location_long", "location_lat")]
-Bierregaard_Osprey_Projected<-SpatialPointsDataFrame(coords = xy, data = Bierregaard_Osprey_DF,proj4string = azim_orign)
-crs(Bierregaard_Osprey_Projected)
-
-#leaflet() %>%
-  #addTiles() %>%
-  #addMarkers(data = Bierregaard_Osprey_Projected)
+#I don't need to convert timestamp to local time since its already in local time apparently
+#Extract month data for filtering
+Bierregaard_Osprey_DF$month<-month(ymd_hms(Bierregaard_Osprey_DF$timestamp))
+#Extract year data for plotting later
+Bierregaard_Osprey_DF$year<-year(ymd_hms(Bierregaard_Osprey_DF$timestamp))
+#Filter data - removed timestamps from December through June (keep months 7-11)
+Bierregaard_Osprey_DF_Filter <- Bierregaard_Osprey_DF %>%
+  filter(sensor_type_id == 653 & month %in% c(6:12))
+#filter erroneous points: Erroneous points are those with unrealistically high speed and turning angle (course). For course (sometimes mistakenly referred to as heading) we will look at the 90th percentile of points as suggested by Gupte et al., 2021. Course is measured as the angle from magnetic north (clockwise).A course of 0 indicates no movement. For speed I used Kerlinger 1989 to determine that the maximum recorded flight speed of an osprey was 33.4 meters/second.
+quantile(Bierregaard_Osprey_DF_Filter$heading, probs = 0.9) #got 232
+Bierregaard_Osprey_Data<-filter(Bierregaard_Osprey_DF_Filter, ground_speed <= 33.4 & heading < 232)
 ```
 
-## Load in Data from my Git Hub repository
+```{r}
+#All individuals are tracked via GPS so no need to specify which individuals to download. 
+Jensen_Osprey<-getMovebankData(study ="Pandion haliaetus Osprey - SouthEast Michigan",
+                                    login = loginStored, removeDuplicatedTimestamps=TRUE) 
+#explore sampling frequencies using time lag
+list<-timeLag(Jensen_Osprey, units = "hours")
+sapply(list, find_mode)
+sapply(list, median) #X82186.Humphries_Rachel and X82190.Fenton.Aldo have courser frequencies than what I am looking for so I will remove these individuals after mapping. 
+Jensen_Osprey_DF<-as.data.frame(Jensen_Osprey)
+Jensen_Osprey_DF$month<-month(ymd_hms(Jensen_Osprey_DF$timestamp))
+Jensen_Osprey_DF$year<-year(ymd_hms(Jensen_Osprey_DF$timestamp))
+#Filter data - removed timestamps from December through June (keep months 7-11)
+Jensen_Osprey_DF_Filter <- Jensen_Osprey_DF %>%
+  filter(sensor_type_id == 653 & month %in% c(6:12))
+quantile(Jensen_Osprey_DF_Filter$heading, probs = 0.9) #got 218
+Jensen_Osprey_Data<-filter(Jensen_Osprey_DF_Filter, ground_speed <= 33.4 & heading < 218)
+```
+
+
+To map the data from each study, I will use the 'ggplot', 'sf', 'rgdal', and base R functions. This includes a custom function I created to help batch map all of my data. Data on the background world countries will be obtained using 'tmap' and data will be projected using a custom aziumthal equidistant projection for now. 
+
+```{r, fig.show="hold", out.width="10%"}
+#Spatially reference the Bierregaard data
+Bierregaard_Osprey_Data_sf<-st_as_sf(x=Bierregaard_Osprey_Data, 
+                                     coords = c("location_long.1", "location_lat.1"), crs = wgs84)
+Bierregaard_Osprey_Data_sf<-st_transform(Bierregaard_Osprey_Data_sf, azim_orign)
+#to color code year, ggplot needs year to be a factor data type. 
+Bierregaard_Osprey_Data_sf$year<-as.factor(Bierregaard_Osprey_Data_sf$year) 
+#batch map the GPS points for each individual using ggplot
+names<-unique(Bierregaard_Osprey_Data_sf$trackId)
+
+for (i in names) {
+  y = filter(Bierregaard_Osprey_Data_sf, trackId == i)
+  pws<-plotshit(y)
+  print(pws)
+}
+# the output will be a map for each individual, color coded by year. 
+```
+
+```{r, fig.show="hold", out.width="10%"}
+#Give Jensen data spatial reference
+Jensen_Osprey_Data_sf<-st_as_sf(x=Jensen_Osprey_Data, 
+                                coords = c("location_long.1", "location_lat.1"), crs = wgs84)
+Jensen_Osprey_Data_sf<-st_transform(Jensen_Osprey_Data_sf, azim_orign)
+Jensen_Osprey_Data_sf$year<-as.factor(Jensen_Osprey_Data_sf$year)
+#batch map the GPS points for each individual using ggplot
+names<-unique(Jensen_Osprey_Data_sf$trackId)
+for (i in names) {
+  y = filter(Jensen_Osprey_Data_sf, trackId == i)
+  pws<-plotshit(y)
+  print(pws)
+}
+```
+
+The plots along with the summary data allow me to create an excel file with all the demographic info for each each migration event including the individual associated with each migration event. Migration events will be analyzed separately from each other. From the plots, I can also tell if some individuals were juveniles during their first migration and remove those that did not start migration.
+
+```{r}
+#Creating a list of individuals that did not start migration or had to course of sampling frequenices.
+remove<-c("Aster", "Blackie", "Chester", "Claws", "Felix", "Jocelyn", "Luke", "Mackenzie", "Pearl", "Rafael", "Trepassey")
+# factor levels will be set to 0 in the data frame, but won't actually be removed. I have to change to character data format to remove rows.
+Bierregaard_Osprey_Data$trackId<-as.character(Bierregaard_Osprey_Data$trackId)
+#remove individuals
+Bierregaard_Osprey_Data<-Bierregaard_Osprey_Data[!(Bierregaard_Osprey_Data$trackId %in% remove), ]
+```
+
+```{r}
+remove2<-c("X401.Houghton_Harvist", "X586.Brighton_Barb", "X82186.Humphries_Rachel", "X82190.Fenton_Aldo", "X934.Kensington.Pebbles")
+Jensen_Osprey_Data$trackId<-as.character(Jensen_Osprey_Data$trackId)
+Jensen_Osprey_Data<-Jensen_Osprey_Data[!(Jensen_Osprey_Data$trackId %in% remove2), ]
+```
+
+For now this is as much as I can filter the Movebank data. I will have to filter out GPS points that fall outside of the migration time period and remove wintering tracks from juveniles during their second year in the wintering grounds. We will get to this later once all the datasets are combined. 
+
+
+#### Downloading and Exploring Data From the Illinois Osprey Program
+I won't have as much filtering to do with the Illinois osprey data since I have explored this data in the past and I know which individuals I should keep. I also know all individuals are GPS tracked and that only GPS points are included in the data set. I will still need to filter by month and take out erroneous points, but that is about all I have to do. I have plotted the data on a single map for reference. 
+
+Load in data and keep only individuals that started migration.
 ```{r}
 #personal access token if needed: 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
-#how the fuck to I pull a file from my personal repo...
-urlfile<-"https://raw.githubusercontent.com/Hakalar2000/OspreyMigrationStrategies/main/IL_OspreyData_CompleteMigrations.csv?token=GHSAT0AAAAAACIMXW5N7UQLVRI3ZJBCYI4OZI7APQQ"
+#This link must be replaced each time
+urlfile<-"https://raw.githubusercontent.com/Hakalar2000/OspreyMigrationStrategies/main/PTT2014to2022Compiled.csv?token=GHSAT0AAAAAACIMWYDBGYUN46X2CL75VNLMZJNT7HQ"
 IL_OspreyData<-read_csv(url(urlfile))
 IL_OspreyData<-as.data.frame(IL_OspreyData)
-str(IL_OspreyData)
+keep<-c("2016_35D_14700", "2017_47D_171072", "2019_69D_180325", "2022_27R_220453", "2022_26R_234626", "2020_06R_202512", "2017_44D_171073", "2014_14D_139465", "2020_73D_202511")
+IL_OspreyData<-IL_OspreyData[IL_OspreyData$ID %in% keep, ] 
 ```
-## Format IL osprey data
+
+Clean and filter the data further. 
 ```{r}
 #change column names
 names(IL_OspreyData) [names(IL_OspreyData) == "Longitude(E)"] <- "Lon"
@@ -94,39 +264,245 @@ names(IL_OspreyData) [names(IL_OspreyData) == "Altitude(m)"] <- "Alt"
 IL_OspreyData<-filter(IL_OspreyData, Lat !=0 | Lon != 0)
 #Create timestamp
 IL_OspreyData$TimeStamp<-as.POSIXct(IL_OspreyData$TimeStamp, format = "%m/%d/%Y %H:%M", tz = "UTC")
-class(IL_OspreyData$TimeStamp)
-#Add timezone
-IL_OspreyData$TimeZone<-tz_lookup_coords(IL_OspreyData$Lat, IL_OspreyData$Lon, method = "accurate")
-table(IL_OspreyData$TimeZone)
 #Calculate Solar Time
 IL_OspreyData$SolarTime<-local2Solar(IL_OspreyData$TimeStamp, IL_OspreyData$Lon)
 IL_OspreyData$SolarTime<-as.POSIXct(IL_OspreyData$SolarTime, format = "%m/%d/%Y %H:%M")
-class(IL_OspreyData$SolarTime)
-#filter erroneous points: Erroneous points are those with unrealistically high speed and turning angle (course). For course (sometimes mistakenly referred to as heading) we will look at the 90th percentile of points as suggested by Gupte et al., 2021. Course is measured as the angle from magnetic north (clockwise).A course of 0 indicates no movement. For speed I used Kerlinger 1989 to determine that the maximum recorded flight speed of an osprey was 33.4 meters/second (I converted this to knots and got 64.92 since speed is estimated in knots in my data).
-quantile(IL_OspreyData$Course, probs = 0.9) #got 250
-IL_OspreyData<-filter(IL_OspreyData, Speed < 65 & Course < 250)
-str(IL_OspreyData)
+#Filter data further
+IL_OspreyData <- IL_OspreyData %>%
+  filter(Month %in% c(6:12))
+quantile(IL_OspreyData$Course, probs = 0.9) #got 252
+IL_OspreyData<-filter(IL_OspreyData, Speed <= 33.4 & Course < 252)
 #Plot and look for visual outliers
-wgs84<-CRS("+proj=longlat +datum=WGS84") 
-#GCS in WGS 1984
-azim_orign = CRS("+proj=aeqd +lat_0=25 +lon_0=-90 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs") #PCS in custom azimuthal equidistant projection
 IL_OspreyData_sf<-st_as_sf(x=IL_OspreyData, coords = c("Lon", "Lat"), crs = wgs84)
 IL_OspreyData_sf<-st_transform(IL_OspreyData_sf, azim_orign)
-#Obtain world data
-data(World)
-world_sf<-st_transform(World, azim_orign)
 ggplot() +
   geom_sf(data = world_sf, fill = "white") +
   geom_sf(data = IL_OspreyData_sf, size = 1, aes(color = ID)) +
-  coord_sf(datum = st_crs(azim_orign), xlim = c(-3000000, 4000000), ylim = c(2000000, -2500000)) +
+  coord_sf(datum = st_crs(azim_orign), xlim = c(-3000000, 1000000), ylim = c(3000000, -2000000)) +
   theme(legend.position = "bottom", legend.text = element_text(size = 7)) +
   labs(color = "ID") #there is one erroneous point that must be removed at a high lat/long
+#remove obvious visual outlier
+IL_OspreyData<-IL_OspreyData[-3844, ]
+IL_OspreyData_sf<-IL_OspreyData_sf[-3844, ]
+ggplot() +
+  geom_sf(data = world_sf, fill = "white") +
+  geom_sf(data = IL_OspreyData_sf, size = 1, aes(color = ID)) +
+  coord_sf(datum = st_crs(azim_orign), xlim = c(-3000000, 1000000), ylim = c(3000000, -2000000)) +
+  theme(legend.position = "bottom", legend.text = element_text(size = 7)) +
+  labs(color = "ID") 
+```
+
+#### Combine Dataframes Into A Aingle Dataset And Create Migration Events IDs
+```{r}
+#keep only columns needed for analysis: time stamp, individual ID, year, month, lat, lon, columns for each data set. Make sure the names of each column are the same between all data sets. Use the str() function to look at column names
+IL_OspreyData<-IL_OspreyData[ ,c("ID", "Month", "Year", "SolarTime", "Lat", "Lon")] 
+
+#rename to match movebank data
+names(IL_OspreyData) [names(IL_OspreyData) == "Lon"] <- "location_long"
+names(IL_OspreyData) [names(IL_OspreyData) == "Lat"] <- "location_lat"
+names(IL_OspreyData) [names(IL_OspreyData) == "Year"] <- "year"
+names(IL_OspreyData) [names(IL_OspreyData) == "Month"] <- "month"
+names(IL_OspreyData) [names(IL_OspreyData) == "SolarTime"] <- "timestamp"
+names(IL_OspreyData) [names(IL_OspreyData) == "ID"] <- "trackId"
+
+Bierregaard_Osprey_Data2<-Bierregaard_Osprey_Data[ ,c("location_lat", "location_long", "timestamp", "trackId", "month", "year")]
+
+Jensen_Osprey_Data2<-Jensen_Osprey_Data[ ,c("location_lat", "location_long", "timestamp", "trackId", "month", "year")]
+
+#combine data sets
+Osprey_Data<-rbind(Bierregaard_Osprey_Data2, Jensen_Osprey_Data2, IL_OspreyData)
+
+# assign each migration event a unique ID that is the name of the name of the [animal Name]_[Migration Year]
+Osprey_Data$migrationEvent<-paste(Osprey_Data$trackId, Osprey_Data$year)
+length(unique(Osprey_Data$migrationEvent))
+
+#Remove years second winter juvenile tracks where birds were stationary
+remove3<-c("Artoo 2014", "Belle 2011", "Buck 2010", "Flow 2015", "Penelope 2009", "Snowy 2012", "Thatcher 2011", "X423.Humphries_DTE_Ozzie 2015")
+Osprey_Data<-Osprey_Data[!(Osprey_Data$migrationEvent %in% remove3), ]
+```
+
+#### Filter Start And End Dates
+
+Start by defining the projection needed for distance measurements. I used NSD, which is a distance measurement, to calculate start/end dates.
+```{r}
+#Determine mean center point of data that will inform the prime meridian of our equidistant projection
+#first we must create a polygon around our data using the min/max lat/lon points.
+min_y<-min(Osprey_Data$location_lat)
+min_x<-min(Osprey_Data$location_long)
+max_y<-max(Osprey_Data$location_lat)
+max_x<-max(Osprey_Data$location_long)
+Osprey_Data_Poly<-st_polygon(list(cbind(c(min_x,max_x,max_x,min_x,min_x), c(min_y,min_y,max_y,max_y,min_y))))
+Osprey_Data_Poly<-st_sfc(x=Osprey_Data_Poly, crs = "+proj=longlat +datum=WGS84")
+st_centroid(Osprey_Data_Poly) #returns lat/lon of polygon center. Update the azimuthal equidistant projection
+```
+
+Project the data and calculate NSD
+```{r}
+#Project data using custom azimuthal equidistant projection
+Osprey_Data_sf<-st_as_sf(x=Osprey_Data, coords = c("location_long", "location_lat"), crs = wgs84)
+Osprey_Data_sf<-st_transform(Osprey_Data_sf, azim_orign)
+
+#Extract false easting and northing from our projected data which are in meters. 
+False<-st_coordinates(Osprey_Data_sf) 
+False<-as.data.frame(False)
+Osprey_Data$X<-False$X/1000 #/1000 to equal kilometers. 
+Osprey_Data$Y<-False$Y/1000
+
+#Make a spatial data frame using the package 'sp'. 'adehabitatLR' requires an sp object rather than an sf object.  
+Osprey_trajr<-Osprey_Data
+coordinates(Osprey_trajr) <- c("X", "Y")
+proj4string(Osprey_trajr) <- azim_orign
+
+#Create an ltraj object using the 'adehabitat' package. ltraj objects automatically calculate NSD.
+Osprey_trajr <- as.ltraj(coordinates(Osprey_trajr),
+                          date=Osprey_trajr$timestamp,
+                          id=Osprey_trajr$migrationEvent, typeII=TRUE)
+```
+
+Run the dispersal model and compared start/end dates with final recorded date
+```{r}
+#Run the migrateR dispersal model
+Osprey_nsd<-mvmtClass(Osprey_trajr)
+Osprey_dispersal<-mvmt2dt(Osprey_nsd, mod = "disperser") #Note that some individuals did not fit dispersal patterns.
+Osprey_dispersal
+
+#extract the start and end dates for each migration event and create a dataframe for each migration event with start and end date as columns.
+Osprey_StartEnd<-rbindlist(Osprey_dispersal, idcol = "ID")
+Osprey_StartEnd #312 rows
+Start_End<-rep(c("Start", "End"), times = nrow(Osprey_StartEnd)/2) #divide by two since this will be the number of EACH character that will appear. 
+Osprey_StartEnd$Start_End<-Start_End
+Osprey_StartEnd<-reshape(Osprey_StartEnd, idvar = "ID", timevar = "Start_End", direction = "wide")
+
+# compare the end timestamp to the final timestamp of each migration event. If the end date = final timestamp then the migration was not completed. Mark this in the excel file. 
+Osprey_Data_FinalTrackDay<-Osprey_Data %>%
+  group_by(migrationEvent) %>%
+  slice_max(timestamp)
+Osprey_Data_FinalTrackDay$FinalDay<-Osprey_Data_FinalTrackDay$timestamp
+
+Osprey_StartEnd<-merge(Osprey_StartEnd, Osprey_Data_FinalTrackDay, by.x = "ID", by.y = "migrationEvent")
+Osprey_StartEnd<-Osprey_StartEnd[, c("ID", "date.Start", "date.End", "FinalDay", "month", "year", "location_lat", "location_long")]
+
+Osprey_StartEnd #remove Art 2013, Daphne 2017 and birds that did not fit the dispersal model.
+
+```
+
+Filter the data further by removing individuals that did not fit the dispersal model. Make sure all individuals that had incomplete migrations match what is on the metadata sheet. 
+```{r}
+#Keep only GPS fixes that fall within the start-end timestamp range for each migration event.
+
+#Regularize the time series since 1-hour frequencies are not perfect
+
+#Thin trajectory data to create four different sampling frequencies
 ```
 
 
-### References
+The data set is now filtered and ready for analysis!
+
+## Data Analysis
+Data analysis starts with summarizing the data for Hierarchical Clustering Analysis (HCA). I will then move onto exploratory data analysis, looking at the distribution of the data to determine normalcy. This will inform the test I use later on. I can also explore clustering potential which will inform my decision to reduce dimensionality using a PCA before HCA.  I will repeat all steps for each of the different sampling frequencies. 
+
+#### Summarizing data
+```{r}
+#Transform data into a move object
+
+#calculating distance measurements
+
+#calculating angular measurements
+
+#summarizing data for each measurement
+```
+
+#### Exploratory data analysis
+
+First I will look at the distribution of data for each sampling frequency
+```{r}
+#normality of data
+
+#clustering potential of data
+
+#PCA???
+
+#Extracting principle components
+
+```
+
+#### Hiearchical Clustering Analysis
+```{r}
+# 1-hour
+```
+
+```{r}
+# 3-hour
+```
+
+```{r}
+# 1-Day
+```
+
+```{r}
+# 3-Day
+```
+
+#### Optimal clusters
+```{r}
+# 1-hour
+```
+
+```{r}
+# 3-hour
+```
+
+```{r}
+# 1-Day
+```
+
+```{r}
+# 3-Day
+```
+
+#### PERMANOVA
+```{r}
+# 1-hour
+```
+
+```{r}
+# 3-hour
+```
+
+```{r}
+# 1-Day
+```
+
+```{r}
+# 3-Day
+```
+
+
+
+
+
+
+
+
+```{r}
+#check to see if the NSD dispersal model works
+Bierregaard_Osprey_Data_Artoo<-filter(Bierregaard_Osprey_Data_sf, trackId == "Artoo")
+Bierregaard_Osprey_Data_Artoo$month<-as.factor(Bierregaard_Osprey_Data_Artoo$month)
+ggplot() +
+    geom_sf(data = world_sf, fill = "white") +
+    geom_sf(data = Bierregaard_Osprey_Data_Artoo, size = 1, aes(color = month)) +
+    coord_sf(datum = st_crs(azim_orign), xlim = c(-2000000, 8000000), ylim = c(3000000, -3000000)) +
+    theme(legend.position = "bottom", legend.text = element_text(size = 7)) +
+    labs(color = "month") +
+    facet_wrap(~year)#looks good!
+```
+
+
+## References
 
 * Help using the move package to download data from Movebank: <https://cran.r-project.org/web/packages/move/vignettes/browseMovebank.html> 
 * Navigating and using data from the move package: <https://cran.r-project.org/web/packages/move/vignettes/move.html>
-*Download a CSV file from github: <https://lokraj.me/post/download-github-data/>
-*Github and RStudio interface: <https://rfortherestofus.com/2021/02/how-to-use-git-github-with-r/>
+* Download a CSV file from github: <https://lokraj.me/post/download-github-data/>
+* Github and RStudio interface: <https://rfortherestofus.com/2021/02/how-to-use-git-github-with-r/>
+* Finding mode in R: <https://www.statology.org/mode-in-r/>
+* migrateR Vignette: <https://github.com/dbspitz/migrateR/blob/master/migrateR%20vignette.pdf>
