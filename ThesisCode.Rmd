@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+#personal access token if needed: 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
 #Data retrieval and manipulation
 library(move)
 library(readr) #download CSV using URL link from github
@@ -29,20 +30,18 @@ library(data.table)
 library(migrateR) #could not build vignettes. Also used force = T and updated some packages.
 library(adehabitatLT)
 #static map
-library(ggmap)
-library(mapproj)
 library(ggplot2)
 library(sf)
 library(tmap)
 wgs84<-CRS("+proj=longlat +datum=WGS84") #GCS in WGS 1984
-azim_orign = CRS("+proj=aeqd +lat_0=17.87 +lon_0=-67.87 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs") #PCS in custom azimuthal equidistant projection
+azim_orign = CRS("+proj=aeqd +lat_0=24.43 +lon_0=-82.74 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs") #PCS in custom azimuthal equidistant projection. estiated middle point of the data visually with google maps
 data(World) #world data with country polygons needed for mapping
 world_sf<-st_transform(World, azim_orign) #projected world data
 plotshit<-function(y) {
   ggplot(y) +
     geom_sf(data = world_sf, fill = "white") +
     geom_sf(size = 1, aes(color = year)) +
-    coord_sf(datum = st_crs(azim_orign), xlim = c(-2000000, 8000000), ylim = c(3000000, -3000000)) +
+    coord_sf(datum = st_crs(azim_orign), xlim = c(-4000000, 3000000), ylim = c(3500000, -2500000)) +
     theme(legend.position = "bottom", legend.text = element_text(size = 7)) +
     labs(color = "year") +
     ggtitle(paste0(y$trackId))
@@ -147,10 +146,10 @@ Bierregaard_Osprey<-getMovebankData(study ="Osprey Bierregaard North and South A
                                     animalName = c(Bierregaard_Osprey_summary$animal_local_identifier),
                                     login = loginStored, removeDuplicatedTimestamps=TRUE) 
 #Get the time between consecutive locations using the move package
-list<-timeLag(Bierregaard_Osprey, units = "hours")
+list_Bierr<-timeLag(Bierregaard_Osprey, units = "hours")
 #lapply function applies a function to a list.Each individual within the data set has a median or mode timelag of 1 hour or finer. I used median/mode instead of average since its inevitable that some points were missed (either because the GPS was set to turn off an night, the GPS was turned off when the bird reached a certain location, the data was collected in bursts in the case of GSM, or because the GPS could not get signal)
-sapply(list, find_mode) 
-sapply(list, median)
+sapply(list_Bierr, find_mode) 
+sapply(list_Bierr, median)
 #make into a data frame so I can easily filter, plot, and manipulate the data.
 Bierregaard_Osprey_DF<-as.data.frame(Bierregaard_Osprey)
 #I don't need to convert timestamp to local time since its already in local time apparently
@@ -158,12 +157,14 @@ Bierregaard_Osprey_DF<-as.data.frame(Bierregaard_Osprey)
 Bierregaard_Osprey_DF$month<-month(ymd_hms(Bierregaard_Osprey_DF$timestamp))
 #Extract year data for plotting later
 Bierregaard_Osprey_DF$year<-year(ymd_hms(Bierregaard_Osprey_DF$timestamp))
-#Filter data - removed timestamps from December through June (keep months 7-11)
-Bierregaard_Osprey_DF_Filter <- Bierregaard_Osprey_DF %>%
-  filter(sensor_type_id == 653 & month %in% c(6:12))
+#remove rows with NA values for the next step
+Bierregaard_Osprey_DF<-Bierregaard_Osprey_DF[!is.na(Bierregaard_Osprey_DF$heading),]
 #filter erroneous points: Erroneous points are those with unrealistically high speed and turning angle (course). For course (sometimes mistakenly referred to as heading) we will look at the 90th percentile of points as suggested by Gupte et al., 2021. Course is measured as the angle from magnetic north (clockwise).A course of 0 indicates no movement. For speed I used Kerlinger 1989 to determine that the maximum recorded flight speed of an osprey was 33.4 meters/second.
-quantile(Bierregaard_Osprey_DF_Filter$heading, probs = 0.9) #got 232
-Bierregaard_Osprey_Data<-filter(Bierregaard_Osprey_DF_Filter, ground_speed <= 33.4 & heading < 232)
+quantile(Bierregaard_Osprey_DF$heading, probs = 0.9) #got 228
+Bierregaard_Osprey_DF_Filter<-filter(Bierregaard_Osprey_DF, ground_speed <= 33.4 & heading < 239)
+#Filter data - removed timestamps from December through June (keep months 7-11)
+Bierregaard_Osprey_Data <- Bierregaard_Osprey_DF_Filter %>%
+  filter(sensor_type_id == 653 & month %in% c(6:12))
 ```
 
 ```{r}
@@ -171,17 +172,23 @@ Bierregaard_Osprey_Data<-filter(Bierregaard_Osprey_DF_Filter, ground_speed <= 33
 Jensen_Osprey<-getMovebankData(study ="Pandion haliaetus Osprey - SouthEast Michigan",
                                     login = loginStored, removeDuplicatedTimestamps=TRUE) 
 #explore sampling frequencies using time lag
-list<-timeLag(Jensen_Osprey, units = "hours")
-sapply(list, find_mode)
-sapply(list, median) #X82186.Humphries_Rachel and X82190.Fenton.Aldo have courser frequencies than what I am looking for so I will remove these individuals after mapping. 
+list_Jens<-timeLag(Jensen_Osprey, units = "hours")
+sapply(list_Jens, find_mode)
+sapply(list_Jens, median) #X82186.Humphries_Rachel and X82190.Fenton_Aldo have courser frequencies than what I am looking for so I will remove these individuals after mapping. 
 Jensen_Osprey_DF<-as.data.frame(Jensen_Osprey)
 Jensen_Osprey_DF$month<-month(ymd_hms(Jensen_Osprey_DF$timestamp))
 Jensen_Osprey_DF$year<-year(ymd_hms(Jensen_Osprey_DF$timestamp))
+Jensen_Osprey_DF<-Jensen_Osprey_DF[!is.na(Jensen_Osprey_DF$heading),]
 #Filter data - removed timestamps from December through June (keep months 7-11)
-Jensen_Osprey_DF_Filter <- Jensen_Osprey_DF %>%
+quantile(Jensen_Osprey_DF$heading, probs = 0.9) #got 218
+Jensen_Osprey_DF_Filter<-filter(Jensen_Osprey_DF, ground_speed <= 33.4 & heading < 227)
+Jensen_Osprey_Data <- Jensen_Osprey_DF_Filter %>%
   filter(sensor_type_id == 653 & month %in% c(6:12))
-quantile(Jensen_Osprey_DF_Filter$heading, probs = 0.9) #got 218
-Jensen_Osprey_Data<-filter(Jensen_Osprey_DF_Filter, ground_speed <= 33.4 & heading < 218)
+#remove the two individuals that were tracked at courser sampling frequencies than needed.
+Jensen_Osprey_Data$trackId<-as.character(Jensen_Osprey_Data$trackId)
+remove<-c("X82190.Fenton_Aldo", "X82186.Humphries_Rachel")
+Jensen_Osprey_Data<-Jensen_Osprey_Data[!(Jensen_Osprey_Data$trackId %in% remove),]
+unique(Jensen_Osprey_Data$trackId)
 ```
 
 
@@ -202,7 +209,9 @@ for (i in names) {
   pws<-plotshit(y)
   print(pws)
 }
-# the output will be a map for each individual, color coded by year. 
+#I will remove individuals that did not start migration or were tracked in 2007 (the tracks from this year are very thin: "Pearl 2013", "Rafael 2009","Luke 2007", "Aster 2017", "Chester 2014", "Felix 2007", "Claws 2007", "Claws 2008" "Mackenzie 2013", "Trepassey 2016", "Tucker 2011", "Jocelyn 2016", 
+
+#I will also remove tracks from specific years for some individuals since those migrations were not started or skipped (juveniles spend 18 months in wintering grounds during their first winter): "Rammie 2013", "Snowy 2012", "Thatcher 2011", "Penelope 2009", "Buck 2010", "Belle 2011", "Flow 2015", "Art 2013", "Artoo 2014", "Crabby 2015", "Borealis 2018", "Daphne 2017", "Weber 2014", "Nick 2017", "Ron 2015", "Woody 2015"
 ```
 
 ```{r, fig.show="hold", out.width="10%"}
@@ -213,67 +222,53 @@ Jensen_Osprey_Data_sf<-st_transform(Jensen_Osprey_Data_sf, azim_orign)
 Jensen_Osprey_Data_sf$year<-as.factor(Jensen_Osprey_Data_sf$year)
 #batch map the GPS points for each individual using ggplot
 names<-unique(Jensen_Osprey_Data_sf$trackId)
+names
 for (i in names) {
   y = filter(Jensen_Osprey_Data_sf, trackId == i)
   pws<-plotshit(y)
   print(pws)
 }
+
+#Remove individuals that did not migrate: "X586.Brighton_Barb 2015", "X934.Kensington.Pebbles 2017"
+
+#Remove tracks for years where migration did not happend: "X423.Humphries_DTE_Ozzie 2015", "X139005.Monroe.Julie 2017"
 ```
 
 The plots along with the summary data allow me to create an excel file with all the demographic info for each each migration event including the individual associated with each migration event. Migration events will be analyzed separately from each other. From the plots, I can also tell if some individuals were juveniles during their first migration and remove those that did not start migration.
 
-```{r}
-#Creating a list of individuals that did not start migration or had to course of sampling frequenices.
-remove<-c("Aster", "Blackie", "Chester", "Claws", "Felix", "Jocelyn", "Luke", "Mackenzie", "Pearl", "Rafael", "Trepassey")
-# factor levels will be set to 0 in the data frame, but won't actually be removed. I have to change to character data format to remove rows.
-Bierregaard_Osprey_Data$trackId<-as.character(Bierregaard_Osprey_Data$trackId)
-#remove individuals
-Bierregaard_Osprey_Data<-Bierregaard_Osprey_Data[!(Bierregaard_Osprey_Data$trackId %in% remove), ]
-```
-
-```{r}
-remove2<-c("X401.Houghton_Harvist", "X586.Brighton_Barb", "X82186.Humphries_Rachel", "X82190.Fenton_Aldo", "X934.Kensington.Pebbles")
-Jensen_Osprey_Data$trackId<-as.character(Jensen_Osprey_Data$trackId)
-Jensen_Osprey_Data<-Jensen_Osprey_Data[!(Jensen_Osprey_Data$trackId %in% remove2), ]
-```
-
-For now this is as much as I can filter the Movebank data. I will have to filter out GPS points that fall outside of the migration time period and remove wintering tracks from juveniles during their second year in the wintering grounds. We will get to this later once all the datasets are combined. 
-
+For now this is as much as I can filter the Movebank data. I will have to filter out migration events that did not occur later and GPS points that fall outside of the migration time period. We will get to this later once all the datasets are combined. 
 
 #### Downloading and Exploring Data From the Illinois Osprey Program
 I won't have as much filtering to do with the Illinois osprey data since I have explored this data in the past and I know which individuals I should keep. I also know all individuals are GPS tracked and that only GPS points are included in the data set. I will still need to filter by month and take out erroneous points, but that is about all I have to do. I have plotted the data on a single map for reference. 
 
 Load in data and keep only individuals that started migration.
 ```{r}
-#personal access token if needed: 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
-#This link must be replaced each time
-urlfile<-"https://raw.githubusercontent.com/Hakalar2000/OspreyMigrationStrategies/main/PTT2014to2022Compiled.csv?token=GHSAT0AAAAAACIMWYDBGYUN46X2CL75VNLMZJNT7HQ"
-IL_OspreyData<-read_csv(url(urlfile))
-IL_OspreyData<-as.data.frame(IL_OspreyData)
+#The dataset is on github, so you can directly import the dataset to R. No special code required. 
+IL_OspreyData<-as.data.frame(PTT2014to2022Compiled)
+#I explored this data earlier in the year, and determined these were the individuals that started migration.
 keep<-c("2016_35D_14700", "2017_47D_171072", "2019_69D_180325", "2022_27R_220453", "2022_26R_234626", "2020_06R_202512", "2017_44D_171073", "2014_14D_139465", "2020_73D_202511")
-IL_OspreyData<-IL_OspreyData[IL_OspreyData$ID %in% keep, ] 
+IL_OspreyData<-IL_Osprey_Data[IL_Osprey_Data$ID %in% keep, ] 
 ```
 
 Clean and filter the data further. 
 ```{r}
-#change column names
-names(IL_OspreyData) [names(IL_OspreyData) == "Longitude(E)"] <- "Lon"
-names(IL_OspreyData) [names(IL_OspreyData) == "Latitude(N)"] <- "Lat"
-names(IL_OspreyData) [names(IL_OspreyData) == "Altitude(m)"] <- "Alt"
+#Rename lat/lon columns cause the names currently will cause issues
+names(IL_OspreyData) [names(IL_OspreyData) == "Longitude(E)"] <- "location_long"
+names(IL_OspreyData) [names(IL_OspreyData) == "Latitude(N)"] <- "location_lat"
 #Remove NAs from lat/lon
-IL_OspreyData<-filter(IL_OspreyData, Lat !=0 | Lon != 0)
+IL_OspreyData<-filter(IL_OspreyData, location_lat !=0 | location_long != 0)
 #Create timestamp
 IL_OspreyData$TimeStamp<-as.POSIXct(IL_OspreyData$TimeStamp, format = "%m/%d/%Y %H:%M", tz = "UTC")
 #Calculate Solar Time
-IL_OspreyData$SolarTime<-local2Solar(IL_OspreyData$TimeStamp, IL_OspreyData$Lon)
-IL_OspreyData$SolarTime<-as.POSIXct(IL_OspreyData$SolarTime, format = "%m/%d/%Y %H:%M")
+IL_OspreyData$timestamp<-local2Solar(IL_OspreyData$TimeStamp, IL_OspreyData$location_long)
+IL_OspreyData$timestamp<-as.POSIXct(IL_OspreyData$TimeStamp, format = "%m/%d/%Y %H:%M")
 #Filter data further
 IL_OspreyData <- IL_OspreyData %>%
   filter(Month %in% c(6:12))
 quantile(IL_OspreyData$Course, probs = 0.9) #got 252
 IL_OspreyData<-filter(IL_OspreyData, Speed <= 33.4 & Course < 252)
 #Plot and look for visual outliers
-IL_OspreyData_sf<-st_as_sf(x=IL_OspreyData, coords = c("Lon", "Lat"), crs = wgs84)
+IL_OspreyData_sf<-st_as_sf(x=IL_OspreyData, coords = c("location_long", "location_lat"), crs = wgs84)
 IL_OspreyData_sf<-st_transform(IL_OspreyData_sf, azim_orign)
 ggplot() +
   geom_sf(data = world_sf, fill = "white") +
@@ -281,9 +276,10 @@ ggplot() +
   coord_sf(datum = st_crs(azim_orign), xlim = c(-3000000, 1000000), ylim = c(3000000, -2000000)) +
   theme(legend.position = "bottom", legend.text = element_text(size = 7)) +
   labs(color = "ID") #there is one erroneous point that must be removed at a high lat/long
-#remove obvious visual outlier
-IL_OspreyData<-IL_OspreyData[-3844, ]
-IL_OspreyData_sf<-IL_OspreyData_sf[-3844, ]
+
+#remove obvious visual outlier. The position of this outlier within the data table may change. To find it open the table view and filter to show only 69D. Then sort the latitude column by the largest value. 
+IL_OspreyData<-IL_OspreyData[-4208, ]
+IL_OspreyData_sf<-IL_OspreyData_sf[-4208, ]
 ggplot() +
   geom_sf(data = world_sf, fill = "white") +
   geom_sf(data = IL_OspreyData_sf, size = 1, aes(color = ID)) +
@@ -295,14 +291,10 @@ ggplot() +
 #### Combine Dataframes Into A Aingle Dataset And Create Migration Events IDs
 ```{r}
 #keep only columns needed for analysis: time stamp, individual ID, year, month, lat, lon, columns for each data set. Make sure the names of each column are the same between all data sets. Use the str() function to look at column names
-IL_OspreyData<-IL_OspreyData[ ,c("ID", "Month", "Year", "SolarTime", "Lat", "Lon")] 
-
+IL_OspreyData<-IL_OspreyData[ ,c("ID", "Month", "Year", "timestamp", "location_lat", "location_long")] 
 #rename to match movebank data
-names(IL_OspreyData) [names(IL_OspreyData) == "Lon"] <- "location_long"
-names(IL_OspreyData) [names(IL_OspreyData) == "Lat"] <- "location_lat"
 names(IL_OspreyData) [names(IL_OspreyData) == "Year"] <- "year"
 names(IL_OspreyData) [names(IL_OspreyData) == "Month"] <- "month"
-names(IL_OspreyData) [names(IL_OspreyData) == "SolarTime"] <- "timestamp"
 names(IL_OspreyData) [names(IL_OspreyData) == "ID"] <- "trackId"
 
 Bierregaard_Osprey_Data2<-Bierregaard_Osprey_Data[ ,c("location_lat", "location_long", "timestamp", "trackId", "month", "year")]
@@ -316,25 +308,17 @@ Osprey_Data<-rbind(Bierregaard_Osprey_Data2, Jensen_Osprey_Data2, IL_OspreyData)
 Osprey_Data$migrationEvent<-paste(Osprey_Data$trackId, Osprey_Data$year)
 length(unique(Osprey_Data$migrationEvent))
 
-#Remove years second winter juvenile tracks where birds were stationary
-remove3<-c("Artoo 2014", "Belle 2011", "Buck 2010", "Flow 2015", "Penelope 2009", "Snowy 2012", "Thatcher 2011", "X423.Humphries_DTE_Ozzie 2015")
-Osprey_Data<-Osprey_Data[!(Osprey_Data$migrationEvent %in% remove3), ]
+#Remove migration events where migration did not occur (or are from 2007)
+remove<-c("Pearl 2013", "Rafael 2009","Luke 2007", "Aster 2017", "Chester 2014", "Felix 2007", "Claws 2007", "Claws 2008", "Mackenzie 2013", "Trepassey 2016", "Tucker 2011", "Jocelyn 2016", "Rammie 2013", "Snowy 2012", "Thatcher 2011", "Penelope 2009", "Buck 2010", "Belle 2011", "Flow 2015", "Art 2013", "Artoo 2014", "Crabby 2015", "Borealis 2018", "Daphne 2017", "Weber 2014", "Nick 2017", "Ron 2015", "Woody 2015", "X586.Brighton_Barb 2015", "X934.Kensington.Pebbles 2017", "X423.Humphries_DTE_Ozzie 2015", "X139005.Monroe.Julie 2017")
+length(remove)
+
+# factor levels will be set to 0 in the data frame, but won't actually be removed. I have to change to character data format to remove rows.
+Osprey_Data$migrationEvent<-as.character(Osprey_Data$migrationEvent)
+Osprey_Data<-Osprey_Data[!(Osprey_Data$migrationEvent %in% remove), ]
+length(unique(Osprey_Data$migrationEvent))
 ```
 
 #### Filter Start And End Dates
-
-Start by defining the projection needed for distance measurements. I used NSD, which is a distance measurement, to calculate start/end dates.
-```{r}
-#Determine mean center point of data that will inform the prime meridian of our equidistant projection
-#first we must create a polygon around our data using the min/max lat/lon points.
-min_y<-min(Osprey_Data$location_lat)
-min_x<-min(Osprey_Data$location_long)
-max_y<-max(Osprey_Data$location_lat)
-max_x<-max(Osprey_Data$location_long)
-Osprey_Data_Poly<-st_polygon(list(cbind(c(min_x,max_x,max_x,min_x,min_x), c(min_y,min_y,max_y,max_y,min_y))))
-Osprey_Data_Poly<-st_sfc(x=Osprey_Data_Poly, crs = "+proj=longlat +datum=WGS84")
-st_centroid(Osprey_Data_Poly) #returns lat/lon of polygon center. Update the azimuthal equidistant projection
-```
 
 Project the data and calculate NSD
 ```{r}
