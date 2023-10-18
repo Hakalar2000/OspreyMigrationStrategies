@@ -193,7 +193,6 @@ Jensen_Osprey_Data<-Jensen_Osprey_Data[!(Jensen_Osprey_Data$trackId %in% remove)
 unique(Jensen_Osprey_Data$trackId)
 ```
 
-
 To map the data from each study, I will use the 'ggplot', 'sf', 'rgdal', and base R functions. This includes a custom function I created to help batch map all of my data. Data on the background world countries will be obtained using 'tmap' and data will be projected using a custom aziumthal equidistant projection for now. 
 
 ```{r, fig.show="hold", out.width="10%"}
@@ -249,7 +248,7 @@ Load in data and keep only individuals that started migration.
 IL_OspreyData<-as.data.frame(PTT2014to2022Compiled)
 #I explored this data earlier in the year, and determined these were the individuals that started migration.
 keep<-c("2016_35D_14700", "2017_47D_171072", "2019_69D_180325", "2022_27R_220453", "2022_26R_234626", "2020_06R_202512", "2017_44D_171073", "2014_14D_139465", "2020_73D_202511")
-IL_OspreyData<-IL_Osprey_Data[IL_Osprey_Data$ID %in% keep, ] 
+IL_OspreyData<-IL_OspreyData[IL_OspreyData$ID %in% keep, ] 
 ```
 
 Clean and filter the data further. 
@@ -387,12 +386,6 @@ for (i in events) {
 }
 
 length(unique(df$migrationEvent)) #142 migration events and 115 individuals
-
-#arrange and clean data format
-df %>%
-  group_by(migrationEvent) %>%
-  arrange(desc(ymd_hms(df$timestamp)))
-names(df) [names(df) == "migrationEvent"] <- "individual.local.identifier"
 ```
 
 
@@ -401,7 +394,7 @@ names(df) [names(df) == "migrationEvent"] <- "individual.local.identifier"
 OSPR<-df2move(df,
         proj = wgs84, 
         x = "location_long", y = "location_lat", 
-        time = "timestamp", track_id = "individual.local.identifier")
+        time = "timestamp", track_id = "migrationEvent")
 
 #regularize the time series through the move package. To do this we will have to apply the regularization to each move object within the movestack (annoying, I know). The interpolate time function fills in positional points along a standard time series. We will use 1-hour to do this. 
 Stacked<-list() #empty list for output
@@ -429,9 +422,44 @@ Stacked_3hr<-list()
 for (i in 1:142) {
   x<-thinTrackTime(OSPR_1hour[[i]], interval = as.difftime(3, units="hours"),
                           tolerance = as.difftime(15, units="mins"), criteria = "closest")
-  Stacked_3hr[[i]] = x
+  split<-move::split(x)
+  Stacked_3hr[[i]] = split$selected
 }
 
+OSPR_3hour<-moveStack(Stacked_3hr) 
+str(OSPR_3hour@trackId)
+
+#1-day sampling frequency
+Stacked_1day<-list()
+  
+for (i in 1:142) {
+  x<-thinTrackTime(OSPR_1hour[[i]], interval = as.difftime(1, units="days"),
+                          tolerance = as.difftime(15, units="mins"), criteria = "closest")
+  split<-move::split(x)
+  Stacked_1day[[i]] = split$selected
+}
+
+OSPR_1day<-moveStack(Stacked_1day) 
+str(OSPR_1day@trackId)
+
+#3-day sampling frequency
+Stacked_3day<-list()
+  
+for (i in 1:142) {
+  x<-thinTrackTime(OSPR_1hour[[i]], interval = as.difftime(3, units="days"),
+                          tolerance = as.difftime(15, units="mins"), criteria = "closest")
+  split<-move::split(x)
+  Stacked_3day[[i]] = split$selected
+}
+
+OSPR_3day<-moveStack(Stacked_3day) 
+str(OSPR_3day@trackId)
+
+#plot one of the migration events for each time period
+plot(OSPR_1hour[[1]])
+plot(OSPR_3hour[[1]])
+plot(OSPR_1day[[1]])
+plot(OSPR_3day[[1]])
 ```
 
 The data set is now filtered and ready for analysis!
@@ -440,15 +468,109 @@ The data set is now filtered and ready for analysis!
 Data analysis starts with summarizing the data for Hierarchical Clustering Analysis (HCA). I will then move onto exploratory data analysis, looking at the distribution of the data to determine normalcy. This will inform the test I use later on. I can also explore clustering potential which will inform my decision to reduce dimensionality using a PCA before HCA.  I will repeat all steps for each of the different sampling frequencies. 
 
 #### Summarizing data
+First lets calculate primary characteristics with the move package and some secondary characteristics
 ```{r}
-#Transform data into a move object
+#Project data with custom azimuthal equidistant projection
+OSPR_1hour_azim <- spTransform(OSPR_1hour, CRSobj=azim_orign)
+OSPR_3hour_azim <- spTransform(OSPR_3hour, CRSobj=azim_orign)
+OSPR_1day_azim <- spTransform(OSPR_1day, CRSobj=azim_orign)
+OSPR_3day_azim <- spTransform(OSPR_3day, CRSobj=azim_orign)
 
-#calculating distance measurements
+#calculating distance between consecutive GPS points (meters)
+OSPR_1hour_azim$distance<-unlist(lapply(distance(OSPR_1hour_azim), c, NA))
+OSPR_3hour_azim$distance<-unlist(lapply(distance(OSPR_3hour_azim), c, NA))
+OSPR_1day_azim$distance<-unlist(lapply(distance(OSPR_1day_azim), c, NA))
+OSPR_3day_azim$distance<-unlist(lapply(distance(OSPR_3day_azim), c, NA))
 
-#calculating angular measurements
+#calculating speed/velocity between consecutive GPS points (m/s)
+OSPR_1hour_azim$speed<-unlist(lapply(speed(OSPR_1hour_azim), c, NA))
+OSPR_3hour_azim$speed<-unlist(lapply(speed(OSPR_3hour_azim), c, NA))
+OSPR_1day_azim$speed<-unlist(lapply(speed(OSPR_1day_azim), c, NA))
+OSPR_3day_azim$speed<-unlist(lapply(speed(OSPR_3day_azim), c, NA))
 
-#summarizing data for each measurement
+#Project data with custom conformal projection: the Mercator projection is a conformal cylindrical projection
+mercator = CRS("+init=epsg:4326") #this projection covers the world so no need to custom define projection attributes
+OSPR_1hour_mercator <- spTransform(OSPR_1hour, CRSobj=mercator)
+OSPR_3hour_mercator <- spTransform(OSPR_3hour, CRSobj=mercator)
+OSPR_1day_mercator <- spTransform(OSPR_1day, CRSobj=mercator)
+OSPR_3day_mercator <- spTransform(OSPR_3day, CRSobj=mercator)
+
+#calculating absolute angle
+OSPR_1hour_mercator$abs_angle<-unlist(lapply(angle(OSPR_1hour_mercator), c, NA))
+OSPR_3hour_mercator$abs_angle<-unlist(lapply(angle(OSPR_3hour_mercator), c, NA))
+OSPR_1day_mercator$abs_angle<-unlist(lapply(angle(OSPR_1day_mercator), c, NA))
+OSPR_3day_mercator$abs_angle<-unlist(lapply(angle(OSPR_3day_mercator), c, NA))
+
+#calculate Turning Angle
+OSPR_1hour_mercator$rel_angle<-unlist(lapply(turnAngleGc
+                                             (OSPR_1hour_mercator), 
+                                             function(x) c(NA, x, NA)))
+OSPR_3hour_mercator$rel_angle<-unlist(lapply(turnAngleGc
+                                             (OSPR_3hour_mercator), 
+                                             function(x) c(NA, x, NA)))
+OSPR_1day_mercator$rel_angle<-unlist(lapply(turnAngleGc
+                                             (OSPR_1day_mercator), 
+                                             function(x) c(NA, x, NA)))
+OSPR_3day_mercator$rel_angle<-unlist(lapply(turnAngleGc
+                                             (OSPR_3day_mercator), 
+                                             function(x) c(NA, x, NA)))
+
+#calculating time measurements
+OSPR_1hour_azim$lag<-unlist(lapply(timeLag(OSPR_1hour_azim, 
+                                           units = "hours"), c, NA))
+OSPR_3hour_azim$lag<-unlist(lapply(timeLag(OSPR_3hour_azim, 
+                                           units = "hours"), c, NA))
+OSPR_1day_azim$lag<-unlist(lapply(timeLag(OSPR_1day_azim, 
+                                           units = "hours"), c, NA))
+OSPR_3day_azim$lag<-unlist(lapply(timeLag(OSPR_3day_azim, 
+                                           units = "hours"), c, NA))
 ```
+
+Next I will transform my move objects into data frames and extract the characteristics plus coordinate and migration Event information. I will append the angular info from the Mercator projected data frames to the azimuthal dataframes then calculate angular velocity. 
+```{r}
+#1-hour
+OSPR_1hour_azim_DF<-as.data.frame(OSPR_1hour_azim)
+OSPR_1hour_mercator_DF<-as.data.frame(OSPR_1hour_mercator)
+OSPR_1hour_azim_DF$rel_angle<-OSPR_1hour_mercator_DF$rel_angle
+OSPR_1hour_azim_DF$abs_angle<-OSPR_1hour_mercator_DF$abs_angle
+OSPR_1hour_azim_DF$turn_speed<-
+  OSPR_1hour_azim_DF$speed * cos(OSPR_1hour_azim_DF$rel_angle)
+
+#3-hour
+OSPR_3hour_azim_DF<-as.data.frame(OSPR_3hour_azim)
+OSPR_3hour_mercator_DF<-as.data.frame(OSPR_3hour_mercator)
+OSPR_3hour_azim_DF$rel_angle<-OSPR_3hour_mercator_DF$rel_angle
+OSPR_3hour_azim_DF$abs_angle<-OSPR_3hour_mercator_DF$abs_angle
+OSPR_3hour_azim_DF$turn_speed<-
+  OSPR_3hour_azim_DF$speed * cos(OSPR_3hour_azim_DF$rel_angle)
+
+#1-day
+OSPR_1day_azim_DF<-as.data.frame(OSPR_1day_azim)
+OSPR_1day_mercator_DF<-as.data.frame(OSPR_1day_mercator)
+OSPR_1day_azim_DF$rel_angle<-OSPR_1day_mercator_DF$rel_angle
+OSPR_1day_azim_DF$abs_angle<-OSPR_1day_mercator_DF$abs_angle
+OSPR_1day_azim_DF$turn_speed<-
+  OSPR_1day_azim_DF$speed * cos(OSPR_1day_azim_DF$rel_angle)
+
+#3-day
+OSPR_3day_azim_DF<-as.data.frame(OSPR_3day_azim)
+OSPR_3day_mercator_DF<-as.data.frame(OSPR_3day_mercator)
+OSPR_3day_azim_DF$rel_angle<-OSPR_3day_mercator_DF$rel_angle
+OSPR_3day_azim_DF$abs_angle<-OSPR_3day_mercator_DF$abs_angle
+OSPR_3day_azim_DF$turn_speed<-
+  OSPR_3day_azim_DF$speed * cos(OSPR_3day_azim_DF$rel_angle)
+```
+
+Finally, I will transform my dataframe into an ltraj object with the azimuthal equidistant projection so I can calculate FPT and displacement.
+```{r}
+
+```
+
+Lastly, I will summarize my data so that there is one observation of each variable per individual. 
+```{r}
+
+```
+
 
 #### Exploratory data analysis
 
@@ -544,3 +666,4 @@ ggplot() +
 * Github and RStudio interface: <https://rfortherestofus.com/2021/02/how-to-use-git-github-with-r/>
 * Finding mode in R: <https://www.statology.org/mode-in-r/>
 * migrateR Vignette: <https://github.com/dbspitz/migrateR/blob/master/migrateR%20vignette.pdf>
+* Projections in R: <https://www.nceas.ucsb.edu/sites/default/files/2020-04/OverviewCoordinateReferenceSystems.pdf>
