@@ -563,10 +563,274 @@ OSPR_3day_azim_DF$turn_speed<-
 
 Finally, I will transform my dataframe into an ltraj object with the azimuthal equidistant projection so I can calculate FPT and displacement.
 ```{r}
+#I will start with displacement. This is a summary characteristic denoted by the maximum net squared displacement value. 
 
+#1-hour diplacement
+OSPR_1hour_traj<-OSPR_1hour_azim_DF
+coordinates(OSPR_1hour_traj) <- c("coords.x1", "coords.x2")
+proj4string(OSPR_1hour_traj) <- azim_orign
+OSPR_1hour_traj <- as.ltraj(coordinates(OSPR_1hour_traj),
+                          date=OSPR_1hour_traj$timestamps,
+                          id=OSPR_1hour_traj$trackId, typeII=TRUE)
+R2n<-data.frame()
+
+for (i in 1:142) {
+  x<-as.numeric(max(OSPR_1hour_traj[[i]]$R2n))
+  x<-sqrt(x)/1000
+  R2n<-rbind(R2n, x)
+}
+
+id<-as.data.frame(id(OSPR_1hour_traj))
+R2n_1hour<-cbind(R2n, id)
+names(R2n_1hour) [names(R2n_1hour) == "X5465.44415202201"] <- "Displacement"
+names(R2n_1hour) [names(R2n_1hour) == "id(OSPR_1hour_traj)"] <- "trackId"
+
+#3-hour displacement
+OSPR_3hour_traj<-OSPR_3hour_azim_DF
+coordinates(OSPR_3hour_traj) <- c("coords.x1", "coords.x2")
+proj4string(OSPR_3hour_traj) <- azim_orign
+OSPR_3hour_traj <- as.ltraj(coordinates(OSPR_3hour_traj),
+                          date=OSPR_3hour_traj$timestamps,
+                          id=OSPR_3hour_traj$trackId, typeII=TRUE)
+
+R2n_2<-data.frame()
+
+for (i in 1:142) {
+  x<-as.numeric(max(OSPR_3hour_traj[[i]]$R2n))
+  x<-sqrt(x)/1000
+  R2n_2<-rbind(R2n_2, x)
+}
+
+id<-as.data.frame(id(OSPR_3hour_traj))
+R2n_3hour<-cbind(R2n_2, id)
+names(R2n_3hour) [names(R2n_3hour) == "X5465.91011841111"] <- "Displacement"
+names(R2n_3hour) [names(R2n_3hour) == "id(OSPR_3hour_traj)"] <- "trackId"
+
+#1-day displacement
+OSPR_1day_traj<-OSPR_1day_azim_DF
+coordinates(OSPR_1day_traj) <- c("coords.x1", "coords.x2")
+proj4string(OSPR_1day_traj) <- azim_orign
+OSPR_1day_traj <- as.ltraj(coordinates(OSPR_1day_traj),
+                          date=OSPR_1day_traj$timestamps,
+                          id=OSPR_1day_traj$trackId, typeII=TRUE)
+
+R2n_3<-data.frame()
+
+for (i in 1:142) {
+  x<-as.numeric(max(OSPR_1day_traj[[i]]$R2n))
+  x<-sqrt(x)/1000
+  R2n_3<-rbind(R2n_3, x)
+}
+
+id<-as.data.frame(id(OSPR_1day_traj))
+R2n_1day<-cbind(R2n_3, id)
+names(R2n_1day) [names(R2n_1day) == "X5351.57347720469"] <- "Displacement"
+names(R2n_1day) [names(R2n_1day) == "id(OSPR_1day_traj)"] <- "trackId"
+
+#3-day displacement
+OSPR_3day_traj<-OSPR_3day_azim_DF
+coordinates(OSPR_3day_traj) <- c("coords.x1", "coords.x2")
+proj4string(OSPR_3day_traj) <- azim_orign
+OSPR_3day_traj <- as.ltraj(coordinates(OSPR_3day_traj),
+                          date=OSPR_3day_traj$timestamps,
+                          id=OSPR_3day_traj$trackId, typeII=TRUE)
+
+R2n_4<-data.frame()
+
+for (i in 1:142) {
+  x<-as.numeric(max(OSPR_3day_traj[[i]]$R2n))
+  x<-sqrt(x)/1000
+  R2n_4<-rbind(R2n_4, x)
+}
+
+id<-as.data.frame(id(OSPR_3day_traj))
+R2n_3day<-cbind(R2n_4, id)
+names(R2n_3day) [names(R2n_3day) == "X4923.65649986988"] <- "Displacement"
+names(R2n_3day) [names(R2n_3day) == "id(OSPR_3day_traj)"] <- "trackId"
 ```
 
-Lastly, I will summarize my data so that there is one observation of each variable per individual. 
+```{r}
+#1-hour fpt
+fpt_max_1hour<-data.frame()
+for (i in 1:142) {
+  x<-fpt(OSPR_1hour_traj[i], radii=0:100, units="hours") #calculate fpt
+  y<- varlogfpt(x, graph=TRUE) #variogram of fpt
+  z<-as.numeric(y[1,])
+  fpt<-max(z, na.rm = TRUE) #maximum of the variogram
+  fpt_max_1hour<-rbind(fpt_max, fpt)
+}
+mean(fpt_max_1hour$X15.6091543043523) #average maximum of the variogram. We will use 11 kilometers (r11 column) for fpt measurements for the 1-hour intervals
+#function for extracting time values for fpt
+fpt_1hour<-data.frame()
+for (i in 1:142) {
+  x<-fpt(OSPR_1hour_traj[i], radii=0:100, units="hours")
+  y<-mean(x[[1]]$r11, na.rm = T) #we want mean fpt for each bird
+  fpt_1hour<-rbind(fpt_1hour, y)
+}
+names(fpt_1hour) [names(fpt_1hour) == "X2.22704668048032"] <- "fpt"
+id<-as.data.frame(id(OSPR_1hour_traj))
+fpt_1hour<-cbind(fpt_1hour, id)
+names(fpt_1hour) [names(fpt_1hour) == "id(OSPR_1hour_traj)"] <- "trackId"
+
+#3-hour fpt
+fpt_max_3hour<-data.frame()
+for (i in 1:142) {
+  x<-fpt(OSPR_3hour_traj[i], radii=0:100, units="hours") #calculate fpt
+  y<- varlogfpt(x, graph=FALSE) #variogram of fpt
+  z<-as.numeric(y[1,])
+  fpt<-max(z, na.rm = TRUE)
+  fpt_max_3hour<-rbind(fpt_max_3hour, fpt)
+}
+mean(fpt_max_3hour$X13.3839971838427) #10 km
+fpt_3hour<-data.frame()
+for (i in 1:142) {
+  x<-fpt(OSPR_3hour_traj[i], radii=0:100, units="hours")
+  y<-mean(x[[1]]$r10, na.rm = T)
+  fpt_3hour<-rbind(fpt_3hour, y)
+}
+names(fpt_3hour) [names(fpt_3hour) == "X1.89983417609419"] <- "fpt"
+id<-as.data.frame(id(OSPR_3hour_traj))
+fpt_3hour<-cbind(fpt_3hour, id)
+names(fpt_3hour) [names(fpt_3hour) == "id(OSPR_3hour_traj)"] <- "trackId"
+
+#1-day
+fpt_max_1day<-data.frame()
+for (i in 1:142) {
+  x<-fpt(OSPR_1day_traj[i], radii=0:100, units="hours") #calculate fpt
+  y<- varlogfpt(x, graph=FALSE) #variogram of fpt
+  z<-as.numeric(y[1,])
+  fpt<-max(z, na.rm = TRUE)
+  fpt_max_1day<-rbind(fpt_max_1day, fpt)
+}
+fpt_max_1day<-fpt_max_1day[-59,] #got an infinite value so I removed it
+mean(fpt_max_1day) #6 km
+fpt_1day<-data.frame()
+for (i in 1:142) {
+  x<-fpt(OSPR_1day_traj[i], radii=0:100, units="hours")
+  y<-mean(x[[1]]$r6, na.rm = T)
+  fpt_1day<-rbind(fpt_1day, y)
+}
+names(fpt_1day) [names(fpt_1day) == "X0.127976506840921"] <- "fpt"
+id<-as.data.frame(id(OSPR_1day_traj))
+fpt_1day<-cbind(fpt_1day, id)
+names(fpt_1day) [names(fpt_1day) == "id(OSPR_1day_traj)"] <- "trackId"
+
+#3-day
+fpt_max_3day<-data.frame()
+for (i in 1:142) {
+  x<-fpt(OSPR_3day_traj[i], radii=0:100, units="hours") #calculate fpt
+  y<- varlogfpt(x, graph=FALSE) #variogram of fpt
+  z<-as.numeric(y[1,])
+  fpt<-max(z, na.rm = TRUE)
+  fpt_max_3day<-rbind(fpt_max_3day, fpt)
+}
+fpt_max_3day<-filter(fpt_max_3day, X0.356963985615098 != "-Inf")
+mean(fpt_max_3day$X0.356963985615098) #6 km
+fpt_3day<-data.frame()
+for (i in 1:142) {
+  x<-fpt(OSPR_3day_traj[i], radii=0:100, units="hours")
+  y<-mean(x[[1]]$r6, na.rm = T)
+  fpt_3day<-rbind(fpt_3day, y)
+}
+id<-as.data.frame(id(OSPR_3day_traj))
+fpt_3day<-cbind(fpt_3day, id)
+names(fpt_3day) [names(fpt_3day) == "X0.00223418578042695"] <- "fpt"
+names(fpt_3day) [names(fpt_3day) == "id(OSPR_3day_traj)"] <- "trackId"
+```
+
+Lastly, I will summarize my data so that there is one observation of each variable per individual. I should have the following numeric variables for each time frame:
+1. **Time of migration (days)**
+2. Sinuosity
+3. **Total Distance (in km)**
+4. **Average speed of migration**
+5. **Average turning angle speed during migration**
+6. **Average absolute angle**
+7. mean FPT
+```{r}
+#Displcement and mean fpt are already summarized. We will need total distance, average turning speed, average speed, time in days
+
+#1-hour summary
+OSPR_1hour_summary<-OSPR_1hour_azim_DF %>% group_by(trackId) %>%
+  summarise(FirstDate=first(timestamps),
+    LastDate=last(timestamps),
+    duration = format(round(as.integer(
+      difftime(LastDate,FirstDate, units = "days")), 1), 0),
+    total_dist=sum(distance, na.rm = T)/1000,
+    migrate_speed=mean(speed, na.rm = T),
+    mean_turn_speed = mean(turn_speed, na.rm = T),
+    mean_absolute = mean(abs_angle, na.rm = T),
+    .groups = 'drop')%>%
+  as.data.frame()
+OSPR_1hour_summary<-merge(OSPR_1hour_summary, R2n_1hour, by = "trackId")
+OSPR_1hour_summary$sinuosity<-
+  OSPR_1hour_summary$total_dist/OSPR_1hour_summary$Displacement
+OSPR_1hour_summary<-merge(OSPR_1hour_summary, fpt_1hour, by = "trackId")
+
+#3-hour summary
+OSPR_3hour_summary<-OSPR_3hour_azim_DF %>% group_by(trackId) %>%
+  summarise(FirstDate=first(timestamps),
+    LastDate=last(timestamps),
+    duration = format(round(as.integer(
+      difftime(LastDate,FirstDate, units = "days")), 1), 0),
+    total_dist=sum(distance, na.rm = T)/1000,
+    migrate_speed=mean(speed, na.rm = T),
+    mean_turn_speed = mean(turn_speed, na.rm = T),
+    mean_absolute = mean(abs_angle, na.rm = T),
+    .groups = 'drop')%>%
+  as.data.frame()
+OSPR_3hour_summary<-merge(OSPR_3hour_summary, R2n_3hour, by = "trackId")
+OSPR_3hour_summary$sinuosity<-
+  OSPR_3hour_summary$total_dist/OSPR_3hour_summary$Displacement
+OSPR_3hour_summary<-merge(OSPR_3hour_summary, fpt_3hour, by = "trackId")
+str(OSPR_3hour_summary)
+
+#1-day summary
+OSPR_1day_summary<-OSPR_1day_azim_DF %>% group_by(trackId) %>%
+  summarise(FirstDate=first(timestamps),
+    LastDate=last(timestamps),
+    duration = format(round(as.integer(
+      difftime(LastDate,FirstDate, units = "days")), 1), 0),
+    total_dist=sum(distance, na.rm = T)/1000,
+    migrate_speed=mean(speed, na.rm = T),
+    mean_turn_speed = mean(turn_speed, na.rm = T),
+    mean_absolute = mean(abs_angle, na.rm = T),
+    .groups = 'drop')%>%
+  as.data.frame()
+OSPR_1day_summary<-merge(OSPR_1day_summary, R2n_1day, by = "trackId")
+OSPR_1day_summary$sinuosity<-
+  OSPR_1day_summary$total_dist/OSPR_1day_summary$Displacement
+OSPR_1day_summary<-merge(OSPR_1day_summary, fpt_1day, by = "trackId")
+str(OSPR_1day_summary)
+
+#3-day summary
+OSPR_3day_summary<-OSPR_3day_azim_DF %>% group_by(trackId) %>%
+  summarise(FirstDate=first(timestamps),
+    LastDate=last(timestamps),
+    duration = format(round(as.integer(
+      difftime(LastDate,FirstDate, units = "days")), 1), 0),
+    total_dist=sum(distance, na.rm = T)/1000,
+    migrate_speed=mean(speed, na.rm = T),
+    mean_turn_speed = mean(turn_speed, na.rm = T),
+    mean_absolute = mean(abs_angle, na.rm = T),
+    .groups = 'drop')%>%
+  as.data.frame()
+OSPR_3day_summary<-merge(OSPR_3day_summary, R2n_3day, by = "trackId")
+OSPR_3day_summary$sinuosity<-
+  OSPR_3day_summary$total_dist/OSPR_3day_summary$Displacement
+OSPR_3day_summary<-merge(OSPR_3day_summary, fpt_3day, by = "trackId")
+str(OSPR_3day_summary)
+```
+
+Then I will add independent variables
+1. Sex
+2. Age
+3. Migration Flyway
+4. Latitudinal Origin (latitude at the start of migration)
+5. Regional Origin
+6. Start date of migration
+7. Year of migration
+8. complete or incomplete
+
 ```{r}
 
 ```
@@ -667,3 +931,4 @@ ggplot() +
 * Finding mode in R: <https://www.statology.org/mode-in-r/>
 * migrateR Vignette: <https://github.com/dbspitz/migrateR/blob/master/migrateR%20vignette.pdf>
 * Projections in R: <https://www.nceas.ucsb.edu/sites/default/files/2020-04/OverviewCoordinateReferenceSystems.pdf>
+* adehabitatLT use (not the vignette): <http://www.r-gators.com/2018/01/31/wildlife-tracking-data-in-r/>
