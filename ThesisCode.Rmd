@@ -47,6 +47,8 @@ plotshit<-function(y) {
     labs(color = "year") +
     ggtitle(paste0(y$trackId))
 } #function for batch plotting in a for loop
+#data anlaysis
+library(Hmisc)
 ```
 ## Introduction
 
@@ -836,49 +838,53 @@ Latitude<-Osprey_Data %>%
 #adjust the names so that I can merge this data with the metadata file. 
 Latitude$migrationEvent<-gsub(" ", ".", Latitude$migrationEvent)
 Latitude$migrationEvent[1:9]<-sub("^","X",Latitude$migrationEvent[1:9])
-IndividualMetadata<-merge(Latitude, IndividualMetadata, by.x = "migrationEvent", by.y = "TrackId")
+IndividualMetadata<-merge(Latitude, IndividualMetadata, by = "migrationEvent")
 
 #merge dataframes and keep only the needed columns and rename the columns
 OSPR_1hour_summary<-merge(OSPR_1hour_summary, IndividualMetadata, by.x = "trackId", by.y = "migrationEvent")
-OSPR_1hour_summary<-OSPR_1hour_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
+str(OSPR_1hour_summary)
+OSPR_1hour_summary<-OSPR_1hour_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat).x")] 
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "ID"] <- "Individual"
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "mean_turn_speed"] <- "turn_speed"
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "mean_absolute"] <- "abs_angle"
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "Study"] <- "Origin"
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "Migration Year"] <- "Migration_Year"
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "Year Born"] <- "Birth_Year"
-names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "max(location_lat)"] <- "Start_Lat"
+names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "max(location_lat).x"] <- "Start_Lat"
+OSPR_1hour_summary$duration<-as.numeric(OSPR_1hour_summary$duration)
 
 OSPR_3hour_summary<-merge(OSPR_3hour_summary, IndividualMetadata, by.x = "trackId", by.y = "migrationEvent")
-OSPR_3hour_summary<-OSPR_3hour_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
+OSPR_3hour_summary<-OSPR_3hour_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat).x")] 
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "ID"] <- "Individual"
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "mean_turn_speed"] <- "turn_speed"
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "mean_absolute"] <- "abs_angle"
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "Study"] <- "Origin"
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "Migration Year"] <- "Migration_Year"
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "Year Born"] <- "Birth_Year"
-names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "max(location_lat)"] <- "Start_Lat"
+names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "max(location_lat).x"] <- "Start_Lat"
+OSPR_3hour_summary$duration<-as.numeric(OSPR_3hour_summary$duration)
 
 OSPR_1day_summary<-merge(OSPR_1day_summary, IndividualMetadata, by.x = "trackId", by.y = "migrationEvent")
-OSPR_1day_summary<-OSPR_1day_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
+OSPR_1day_summary<-OSPR_1day_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat).x")] 
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "ID"] <- "Individual"
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "mean_turn_speed"] <- "turn_speed"
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "mean_absolute"] <- "abs_angle"
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "Study"] <- "Origin"
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "Migration Year"] <- "Migration_Year"
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "Year Born"] <- "Birth_Year"
-names(OSPR_1day_summary) [names(OSPR_1day_summary) == "max(location_lat)"] <- "Start_Lat"
+names(OSPR_1day_summary) [names(OSPR_1day_summary) == "max(location_lat).x"] <- "Start_Lat"
+OSPR_1day_summary$duration<-as.numeric(OSPR_1day_summary$duration)
 
 OSPR_3day_summary<-merge(OSPR_3day_summary, IndividualMetadata, by.x = "trackId", by.y = "migrationEvent")
-OSPR_3day_summary<-OSPR_3day_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
+OSPR_3day_summary<-OSPR_3day_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat).x")] 
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "ID"] <- "Individual"
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "mean_turn_speed"] <- "turn_speed"
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "mean_absolute"] <- "abs_angle"
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "Study"] <- "Origin"
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "Migration Year"] <- "Migration_Year"
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "Year Born"] <- "Birth_Year"
-names(OSPR_3day_summary) [names(OSPR_3day_summary) == "max(location_lat)"] <- "Start_Lat"
-
+names(OSPR_3day_summary) [names(OSPR_3day_summary) == "max(location_lat).x"] <- "Start_Lat"
+OSPR_3day_summary$duration<-as.numeric(OSPR_3day_summary$duration)
 ```
 
 
@@ -886,7 +892,23 @@ names(OSPR_3day_summary) [names(OSPR_3day_summary) == "max(location_lat)"] <- "S
 
 First I will look at the distribution of data for each sampling frequency
 ```{r}
-#normality of data
+#normality of numeric data using Hmisc package
+hist.data.frame(OSPR_1hour_summary[,4:10]) 
+hist.data.frame(OSPR_3hour_summary[,4:10])
+hist.data.frame(OSPR_1day_summary[,4:10])
+hist.data.frame(OSPR_3day_summary[,4:10])
+#only absolute angle is somewhat normally distributed. 
+
+#Next lets look at correlation between variables
+plot(OSPR_1hour_summary[,4:10])
+cor(OSPR_1hour_summary[,4:10], method = "spearman")
+#total distance and duration; sinuosity and duration seem to be correlated
+plot(OSPR_3hour_summary[,4:10])
+cor(OSPR_3hour_summary[,4:10], method = "spearman")
+plot(OSPR_1day_summary[,4:10])
+cor(OSPR_1day_summary[,4:10], method = "spearman")#duration and fpt increasing in correlation
+plot(OSPR_3day_summary[,4:10])
+cor(OSPR_3day_summary[,4:10], method = "spearman", use = "complete.obs") #fpt, speed, distance all correlated with duration. Note missing values for some birds. These birds cannot be included in the HCA. 
 
 #clustering potential of data
 
