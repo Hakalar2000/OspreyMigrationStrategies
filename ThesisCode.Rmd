@@ -48,7 +48,15 @@ plotshit<-function(y) {
     ggtitle(paste0(y$trackId))
 } #function for batch plotting in a for loop
 #data anlaysis
-library(Hmisc)
+library(Hmisc) #for histograms
+library(hopkins) #hopkins statistic for clustering potential
+min_max_norm <- function(x) {
+    (x - min(x)) / (max(x) - min(x))
+  }#normalize data
+library(cluster) #linkage methods (hclust to make dendrogram is from the stats package)
+library(stats) #dendrogram
+library(dendextend) #modify dendrogram
+library(NbClust)#optimal clusters
 ```
 ## Introduction
 
@@ -825,7 +833,7 @@ Then I will add independent variables
 1. **Sex**
 2. **Age**
 3. **Migration Flyway**
-4. Latitudinal Origin (latitude at the start of migration)
+4. **Latitudinal Origin** (latitude at the start of migration)
 5. **Regional Origin** - Based on the study
 7. **Year of migration**
 8. **complete or incomplete**
@@ -904,52 +912,121 @@ plot(OSPR_1hour_summary[,4:10])
 cor(OSPR_1hour_summary[,4:10], method = "spearman")
 #total distance and duration; sinuosity and duration seem to be correlated
 plot(OSPR_3hour_summary[,4:10])
-cor(OSPR_3hour_summary[,4:10], method = "spearman")
+cor(OSPR_3hour_summary[,4:10], method = "spearman") #duration and total distance; sinuosity and duration correlated
 plot(OSPR_1day_summary[,4:10])
-cor(OSPR_1day_summary[,4:10], method = "spearman")#duration and fpt increasing in correlation
+cor(OSPR_1day_summary[,4:10], method = "spearman")#duration and total distance; duration and fpt more correlated and duration and sinuosity less correlated. 
 plot(OSPR_3day_summary[,4:10])
 cor(OSPR_3day_summary[,4:10], method = "spearman", use = "complete.obs") #fpt, speed, distance all correlated with duration. Note missing values for some birds. These birds cannot be included in the HCA. 
+OSPR_3day_summary<-na.omit(OSPR_3day_summary)
+
+#normalize data between 0-1. Needed for HCA and Hopkins statistic
+OSPR_1hour_norm<-as.data.frame(lapply
+                               (OSPR_1hour_summary[,4:10], min_max_norm))
+OSPR_3hour_norm<-as.data.frame(lapply
+                               (OSPR_3hour_summary[,4:10], min_max_norm))
+OSPR_1day_norm<-as.data.frame(lapply
+                               (OSPR_1day_summary[,4:10], min_max_norm))
+OSPR_3day_norm<-as.data.frame(lapply
+                               (OSPR_3day_summary[,4:10], min_max_norm))
 
 #clustering potential of data
-
-#PCA???
-
-#Extracting principle components
-
+hopkins(OSPR_1hour_norm) # 0.9999~
+hopkins(OSPR_3hour_norm) # 0.9996
+hopkins(OSPR_1day_norm) #0.999
+hopkins(OSPR_3day_norm) #0.999
+#all of the data has high clustering potential so it is not uniformly distributed since the values are close to 1. No need for a PCA.
 ```
 
 #### Hiearchical Clustering Analysis
 ```{r}
 # 1-hour
+
+#linkage methods
+m <- c( "average", "single", "complete", "ward")
+names(m) <- c( "average", "single", "complete", "ward")
+ac <- function(x) {
+  agnes(OSPR_1hour_norm, method = x)$ac
+}
+sapply(m, ac) #ward is best for identifying strongest clustering structure.
+
+#Dendrogram
+OSPR_1hour_clust<-hclust(dist(OSPR_1hour_norm), method = "ward.D2")
+OSPR_1hour_clust<-as.dendrogram(OSPR_1hour_clust)
+labels(OSPR_1hour_clust)<-OSPR_1hour_summary$trackId
+OSPR_1hour_clust <- set(OSPR_1hour_clust, "labels_cex", 0.2)
+
+#color_Sex <- transform(OSPR_1hour_summary,# Create ID by group: color = as.numeric(factor(Sex)))
+#colors_to_use <- as.numeric(color_Sex$color)
+# Sort them based on their order in dend:
+#colors_to_use <- colors_to_use[order.dendrogram(OSPR_1hour_clust)]
+#labels_colors(OSPR_1hour_clust) <- colors_to_use
+#dend.list<-as.character(OSPR_1hour_summary$Sex)
+#labels(OSPR_1hour_clust)<- dend.list[order.dendrogram(OSPR_1hour_clust)]
+plot(OSPR_1hour_clust, main = "1 hour sampling interval")
+
+#optimal clusters
+NbClust(OSPR_1hour_norm, method = "ward.D2", index = "all")$Best.nc # 4 clusters
 ```
 
 ```{r}
 # 3-hour
+
+#linkage method
+m <- c( "average", "single", "complete", "ward")
+names(m) <- c( "average", "single", "complete", "ward")
+ac <- function(x) {
+  agnes(OSPR_3hour_norm, method = x)$ac
+}
+sapply(m, ac) #ward
+
+OSPR_3hour_clust<-hclust(dist(OSPR_3hour_norm), method = "ward.D2")
+OSPR_3hour_clust<-as.dendrogram(OSPR_3hour_clust)
+labels(OSPR_3hour_clust)<-OSPR_3hour_summary$trackId
+OSPR_3hour_clust <- set(OSPR_3hour_clust, "labels_cex", 0.2)
+plot(OSPR_3hour_clust, main = "1 hour sampling interval")
+
+#optimal clusters
+NbClust(OSPR_3hour_norm, method = "ward.D2", index = "all")$Best.nc # 2 clusters
 ```
 
 ```{r}
 # 1-Day
+
+#linkage method
+m <- c( "average", "single", "complete", "ward")
+names(m) <- c( "average", "single", "complete", "ward")
+ac <- function(x) {
+  agnes(OSPR_1day_norm, method = x)$ac
+}
+sapply(m, ac) #ward
+
+OSPR_1day_clust<-hclust(dist(OSPR_1day_norm), method = "ward.D2")
+OSPR_1day_clust<-as.dendrogram(OSPR_1day_clust)
+labels(OSPR_1day_clust)<-OSPR_1day_summary$trackId
+OSPR_1day_clust <- set(OSPR_1day_clust, "labels_cex", 0.2)
+plot(OSPR_1day_clust, main = "1 hour sampling interval")
+
+#optimal clusters
+NbClust(OSPR_1day_norm, method = "ward.D2", index = "all")$Best.nc # 2 or 3 clusters
 ```
 
 ```{r}
 # 3-Day
-```
 
-#### Optimal clusters
-```{r}
-# 1-hour
-```
+#linkage method
+m <- c( "average", "single", "complete", "ward")
+names(m) <- c( "average", "single", "complete", "ward")
+ac <- function(x) {
+  agnes(OSPR_3day_norm, method = x)$ac
+}
+sapply(m, ac) #ward
 
-```{r}
-# 3-hour
-```
-
-```{r}
-# 1-Day
-```
-
-```{r}
-# 3-Day
+OSPR_3day_clust<-hclust(dist(OSPR_3day_norm), method = "ward.D2")
+OSPR_3day_clust<-as.dendrogram(OSPR_3day_clust)
+labels(OSPR_3day_clust)<-OSPR_3day_summary$trackId
+OSPR_3day_clust <- set(OSPR_3day_clust, "labels_cex", 0.2)
+plot(OSPR_3day_clust, main = "1 hour sampling interval")
+NbClust(OSPR_3day_norm, method = "ward.D2", index = "all")$Best.nc # 4 clusters
 ```
 
 #### PERMANOVA
@@ -972,24 +1049,6 @@ cor(OSPR_3day_summary[,4:10], method = "spearman", use = "complete.obs") #fpt, s
 
 
 
-
-
-
-
-```{r}
-#check to see if the NSD dispersal model works
-Bierregaard_Osprey_Data_Artoo<-filter(Bierregaard_Osprey_Data_sf, trackId == "Artoo")
-Bierregaard_Osprey_Data_Artoo$month<-as.factor(Bierregaard_Osprey_Data_Artoo$month)
-ggplot() +
-    geom_sf(data = world_sf, fill = "white") +
-    geom_sf(data = Bierregaard_Osprey_Data_Artoo, size = 1, aes(color = month)) +
-    coord_sf(datum = st_crs(azim_orign), xlim = c(-2000000, 8000000), ylim = c(3000000, -3000000)) +
-    theme(legend.position = "bottom", legend.text = element_text(size = 7)) +
-    labs(color = "month") +
-    facet_wrap(~year)#looks good!
-```
-
-
 ## References
 
 * Help using the move package to download data from Movebank: <https://cran.r-project.org/web/packages/move/vignettes/browseMovebank.html> 
@@ -1000,3 +1059,6 @@ ggplot() +
 * migrateR Vignette: <https://github.com/dbspitz/migrateR/blob/master/migrateR%20vignette.pdf>
 * Projections in R: <https://www.nceas.ucsb.edu/sites/default/files/2020-04/OverviewCoordinateReferenceSystems.pdf>
 * adehabitatLT use (not the vignette): <http://www.r-gators.com/2018/01/31/wildlife-tracking-data-in-r/>
+* Hopkins stat: <https://sushildeore99.medium.com/really-what-is-hopkins-statistic-bad1265df4b>, <https://stats.stackexchange.com/questions/332651/validating-cluster-tendency-using-hopkins-statistic>
+* Basic HCA and Tanglegrams: <https://uc-r.github.io/hc_clustering>
+* Dendrogram modification: <https://rpubs.com/JTK/hclust-color>
