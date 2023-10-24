@@ -56,7 +56,10 @@ min_max_norm <- function(x) {
 library(cluster) #linkage methods (hclust to make dendrogram is from the stats package)
 library(stats) #dendrogram
 library(dendextend) #modify dendrogram
+library(factoextra) #modify dendrograms again
 library(NbClust)#optimal clusters
+library(janitor) #summarizing characteristics for each dendrogram cluster
+library(vegan) #PERMANOVA
 ```
 ## Introduction
 
@@ -422,6 +425,9 @@ for (i in 1:142) {
 #convert output list of move objects into a move stack.
 OSPR_1hour<-moveStack(Stacked) 
 str(OSPR_1hour@trackId) #check that all migration events are accounted for
+#check to make sure time between points is one hour and not finer.
+list_1hour<-timeLag(OSPR_1hour, units = "hours")
+sapply(list_1hour, median) 
 ```
 
 #### Thin the trajectory to different sampling frequencies
@@ -667,7 +673,7 @@ for (i in 1:142) {
   y<- varlogfpt(x, graph=TRUE) #variogram of fpt
   z<-as.numeric(y[1,])
   fpt<-max(z, na.rm = TRUE) #maximum of the variogram
-  fpt_max_1hour<-rbind(fpt_max, fpt)
+  fpt_max_1hour<-rbind(fpt_max_1hour, fpt)
 }
 mean(fpt_max_1hour$X15.6091543043523) #average maximum of the variogram. We will use 11 kilometers (r11 column) for fpt measurements for the 1-hour intervals
 #function for extracting time values for fpt
@@ -846,52 +852,51 @@ Latitude<-Osprey_Data %>%
 #adjust the names so that I can merge this data with the metadata file. 
 Latitude$migrationEvent<-gsub(" ", ".", Latitude$migrationEvent)
 Latitude$migrationEvent[1:9]<-sub("^","X",Latitude$migrationEvent[1:9])
-IndividualMetadata<-merge(Latitude, IndividualMetadata, by = "migrationEvent")
+IndividualMetadata<-merge(Latitude, IndividualMetadata, by.x = "migrationEvent", by.y = "TrackId")
 
 #merge dataframes and keep only the needed columns and rename the columns
 OSPR_1hour_summary<-merge(OSPR_1hour_summary, IndividualMetadata, by.x = "trackId", by.y = "migrationEvent")
-str(OSPR_1hour_summary)
-OSPR_1hour_summary<-OSPR_1hour_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat).x")] 
+OSPR_1hour_summary<-OSPR_1hour_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "ID"] <- "Individual"
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "mean_turn_speed"] <- "turn_speed"
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "mean_absolute"] <- "abs_angle"
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "Study"] <- "Origin"
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "Migration Year"] <- "Migration_Year"
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "Year Born"] <- "Birth_Year"
-names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "max(location_lat).x"] <- "Start_Lat"
+names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "max(location_lat)"] <- "Start_Lat"
 OSPR_1hour_summary$duration<-as.numeric(OSPR_1hour_summary$duration)
 
 OSPR_3hour_summary<-merge(OSPR_3hour_summary, IndividualMetadata, by.x = "trackId", by.y = "migrationEvent")
-OSPR_3hour_summary<-OSPR_3hour_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat).x")] 
+OSPR_3hour_summary<-OSPR_3hour_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "ID"] <- "Individual"
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "mean_turn_speed"] <- "turn_speed"
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "mean_absolute"] <- "abs_angle"
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "Study"] <- "Origin"
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "Migration Year"] <- "Migration_Year"
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "Year Born"] <- "Birth_Year"
-names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "max(location_lat).x"] <- "Start_Lat"
+names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "max(location_lat)"] <- "Start_Lat"
 OSPR_3hour_summary$duration<-as.numeric(OSPR_3hour_summary$duration)
 
 OSPR_1day_summary<-merge(OSPR_1day_summary, IndividualMetadata, by.x = "trackId", by.y = "migrationEvent")
-OSPR_1day_summary<-OSPR_1day_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat).x")] 
+OSPR_1day_summary<-OSPR_1day_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "ID"] <- "Individual"
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "mean_turn_speed"] <- "turn_speed"
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "mean_absolute"] <- "abs_angle"
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "Study"] <- "Origin"
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "Migration Year"] <- "Migration_Year"
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "Year Born"] <- "Birth_Year"
-names(OSPR_1day_summary) [names(OSPR_1day_summary) == "max(location_lat).x"] <- "Start_Lat"
+names(OSPR_1day_summary) [names(OSPR_1day_summary) == "max(location_lat)"] <- "Start_Lat"
 OSPR_1day_summary$duration<-as.numeric(OSPR_1day_summary$duration)
 
 OSPR_3day_summary<-merge(OSPR_3day_summary, IndividualMetadata, by.x = "trackId", by.y = "migrationEvent")
-OSPR_3day_summary<-OSPR_3day_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat).x")] 
+OSPR_3day_summary<-OSPR_3day_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "ID"] <- "Individual"
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "mean_turn_speed"] <- "turn_speed"
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "mean_absolute"] <- "abs_angle"
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "Study"] <- "Origin"
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "Migration Year"] <- "Migration_Year"
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "Year Born"] <- "Birth_Year"
-names(OSPR_3day_summary) [names(OSPR_3day_summary) == "max(location_lat).x"] <- "Start_Lat"
+names(OSPR_3day_summary) [names(OSPR_3day_summary) == "max(location_lat)"] <- "Start_Lat"
 OSPR_3day_summary$duration<-as.numeric(OSPR_3day_summary$duration)
 ```
 
@@ -949,23 +954,32 @@ ac <- function(x) {
 }
 sapply(m, ac) #ward is best for identifying strongest clustering structure.
 
-#Dendrogram
-OSPR_1hour_clust<-hclust(dist(OSPR_1hour_norm), method = "ward.D2")
-OSPR_1hour_clust<-as.dendrogram(OSPR_1hour_clust)
-labels(OSPR_1hour_clust)<-OSPR_1hour_summary$trackId
-OSPR_1hour_clust <- set(OSPR_1hour_clust, "labels_cex", 0.2)
-
-#color_Sex <- transform(OSPR_1hour_summary,# Create ID by group: color = as.numeric(factor(Sex)))
-#colors_to_use <- as.numeric(color_Sex$color)
-# Sort them based on their order in dend:
-#colors_to_use <- colors_to_use[order.dendrogram(OSPR_1hour_clust)]
-#labels_colors(OSPR_1hour_clust) <- colors_to_use
-#dend.list<-as.character(OSPR_1hour_summary$Sex)
-#labels(OSPR_1hour_clust)<- dend.list[order.dendrogram(OSPR_1hour_clust)]
-plot(OSPR_1hour_clust, main = "1 hour sampling interval")
-
 #optimal clusters
-NbClust(OSPR_1hour_norm, method = "ward.D2", index = "all")$Best.nc # 4 clusters
+NbClust(OSPR_1hour_norm, method = "ward.D2", index = "all")$Best.nc # 3 clusters
+
+#create a new osprey summary object and assign color schemes the arrange
+OSP1hrSum<-OSPR_1hour_summary
+OSP1hrSum<-cbind(OSPR_1hour_norm, OSP1hrSum[,c(1:3, 11:19)])
+OSPR_1hour_clust <- OSP1hrSum[,1:7] %>% dist %>% hclust(method = "ward.D2") %>% as.dendrogram 
+k_3 <- cutree(OSPR_1hour_clust, k = 3, order_clusters_as_data = TRUE)
+OSP1hrSum<-cbind(OSP1hrSum, k_3)
+oldvals3 <- unique(OSP1hrSum$k_3)
+newvals3 <- c("#33D1DE", "#2C2AAF", "#6FB568")
+OSP1hrSum$ClassColors<-newvals3[ match(OSP1hrSum$k_3, oldvals3) ]
+oldvals <- unique(OSP1hrSum$Flyway)
+newvals <- c("#33D1DE", "#2C2AAF", "#6FB568")
+oldvals2 <- unique(OSP1hrSum$Sex)
+newvals2 <- c("Blue", "Red", "Gray")
+OSP1hrSum$FlywayColors<-newvals[ match(OSP1hrSum$Flyway, oldvals) ]
+OSP1hrSum$SexColors<-newvals2[ match(OSP1hrSum$Sex, oldvals2) ]
+OSP1hrSum<-OSP1hrSum %>% arrange(k_3) #rearrange so labels are correct on dendrogram
+
+OSPR_1hour_clust %>%
+  set("branches_k_color", k = 3, value = c("#FF0000", "#E462C7", "#F5D000")) %>%
+  set("labels", OSP1hrSum$trackId) %>% #set labels
+  set("labels_cex", 0.3) %>%        # change label size
+  set("labels_col", c(OSP1hrSum$FlywayColors)) %>% #change label color
+  plot()
 ```
 
 ```{r}
@@ -980,13 +994,37 @@ ac <- function(x) {
 sapply(m, ac) #ward
 
 OSPR_3hour_clust<-hclust(dist(OSPR_3hour_norm), method = "ward.D2")
-OSPR_3hour_clust<-as.dendrogram(OSPR_3hour_clust)
-labels(OSPR_3hour_clust)<-OSPR_3hour_summary$trackId
-OSPR_3hour_clust <- set(OSPR_3hour_clust, "labels_cex", 0.2)
-plot(OSPR_3hour_clust, main = "1 hour sampling interval")
 
 #optimal clusters
 NbClust(OSPR_3hour_norm, method = "ward.D2", index = "all")$Best.nc # 2 clusters
+
+OSP3hrSum<-OSPR_3hour_summary
+OSP3hrSum<-cbind(OSPR_3hour_norm, OSP3hrSum[,c(1:3, 11:19)])
+OSPR_3hour_clust <- OSP3hrSum[,1:7] %>% dist %>% hclust(method = "ward.D2") %>% as.dendrogram 
+k_2 <- cutree(OSPR_3hour_clust, k = 2, order_clusters_as_data = TRUE)
+OSP3hrSum<-cbind(OSP3hrSum, k_2)
+oldvals3 <- unique(OSP3hrSum$k_2)
+newvals3 <- c("#33D1DE", "#2C2AAF")
+OSP3hrSum$ClassColors<-newvals3[ match(OSP3hrSum$k_2, oldvals3) ]
+oldvals <- unique(OSP3hrSum$Flyway)
+newvals <- c("#33D1DE", "#2C2AAF", "#6FB568")
+oldvals2 <- unique(OSP3hrSum$Sex)
+newvals2 <- c("Blue", "Red", "Gray")
+OSP3hrSum$FlywayColors<-newvals[ match(OSP3hrSum$Flyway, oldvals) ]
+OSP3hrSum$SexColors<-newvals2[ match(OSP3hrSum$Sex, oldvals2) ]
+OSP3hrSum<-OSP1hrSum %>% arrange(k_3) #rearrange so labels are correct on dendrogram
+
+OSPR_3hour_clust %>%
+  set("branches_k_color", k = 2, value = c("#FF0000", "#E462C7")) %>%
+  set("labels", OSP3hrSum$trackId) %>% #set labels
+  set("labels_cex", 0.3) %>%        # change label size
+  set("labels_col", c(OSP3hrSum$FlywayColors)) %>% #change label color
+  plot()
+
+
+dl <- dendlist(OSPR_1hour_clust, OSPR_3hour_clust)
+?tanglegram
+tanglegram(dl, sort = TRUE, common_subtrees_color_lines = T, highlight_distinct_edges  = FALSE, highlight_branches_lwd = FALSE, main_left = "1-hour", main_right = "3-hour", margin_inner = 0.5)
 ```
 
 ```{r}
@@ -1001,13 +1039,17 @@ ac <- function(x) {
 sapply(m, ac) #ward
 
 OSPR_1day_clust<-hclust(dist(OSPR_1day_norm), method = "ward.D2")
-OSPR_1day_clust<-as.dendrogram(OSPR_1day_clust)
-labels(OSPR_1day_clust)<-OSPR_1day_summary$trackId
-OSPR_1day_clust <- set(OSPR_1day_clust, "labels_cex", 0.2)
-plot(OSPR_1day_clust, main = "1 hour sampling interval")
 
 #optimal clusters
-NbClust(OSPR_1day_norm, method = "ward.D2", index = "all")$Best.nc # 2 or 3 clusters
+NbClust(OSPR_1day_norm, method = "ward.D2", index = "all")$Best.nc # 3 clusters
+
+fviz_dend(x = OSPR_1day_clust, lwd = 0.8, k = 3,
+          show_labels = F,
+          k_colors = c("#117733", "#DDCC77", "#CC6677"),
+          rect = TRUE, 
+          rect_border = c("#117733", "#DDCC77", "#CC6677"), 
+          rect_fill = T,
+          horiz = T)
 ```
 
 ```{r}
@@ -1022,20 +1064,37 @@ ac <- function(x) {
 sapply(m, ac) #ward
 
 OSPR_3day_clust<-hclust(dist(OSPR_3day_norm), method = "ward.D2")
-OSPR_3day_clust<-as.dendrogram(OSPR_3day_clust)
-labels(OSPR_3day_clust)<-OSPR_3day_summary$trackId
-OSPR_3day_clust <- set(OSPR_3day_clust, "labels_cex", 0.2)
-plot(OSPR_3day_clust, main = "1 hour sampling interval")
-NbClust(OSPR_3day_norm, method = "ward.D2", index = "all")$Best.nc # 4 clusters
+
+NbClust(OSPR_3day_norm, method = "ward.D2", index = "all")$Best.nc # 3 clusters
+
+fviz_dend(x = OSPR_3day_clust, lwd = 0.8, k = 3,
+          show_labels = F,
+          k_colors = c("#117733", "#DDCC77", "#CC6677"),
+          rect = TRUE, 
+          rect_border = c("#117733", "#DDCC77", "#CC6677"), 
+          rect_fill = T,
+          horiz = T)
 ```
 
 #### PERMANOVA
 ```{r}
 # 1-hour
+str(OSP1hrSum)
+dis_1hour <- vegdist(OSP1hrSum[,1:7])
+mod <- betadisper(dis_1hour, OSP1hrSum$k_3, type = "centroid")
+anova(mod) #does not meet assumptions and design is unbalanced
+plot(mod) #largest group has the most dispersion = PERMANOVA test will be overly conservative
+adonis2(dis_1hour ~ OSP1hrSum$k_3, method = "euclidean") #we still see a significant result so the groups differ in location as well as dispersion. 
+TukeyHSD(mod) #no diff between class 1 and 2, but differences between 1 and 3 and 2 and 3. 2 may be the optimum number of clusters
 ```
 
 ```{r}
 # 3-hour
+dis_3hour <- vegdist(OSP3hrSum[,1:7])
+mod2 <- betadisper(dis_3hour, OSP3hrSum$k_2, type = "centroid")
+anova(mod2) #meets assumptions. Variances are equally distributed
+plot(mod2) #visually they don't look that different
+adonis2(dis_1hour ~ OSP3hrSum$k_2, method = "euclidean") #No difference between the groups
 ```
 
 ```{r}
