@@ -47,6 +47,7 @@ plotshit<-function(y) {
     labs(color = "year") +
     ggtitle(paste0(y$trackId))
 } #function for batch plotting in a for loop
+
 #data anlaysis
 library(Hmisc) #for histograms
 library(hopkins) #hopkins statistic for clustering potential
@@ -58,8 +59,9 @@ library(stats) #dendrogram
 library(dendextend) #modify dendrogram
 library(factoextra) #modify dendrograms again
 library(NbClust)#optimal clusters
-library(janitor) #summarizing characteristics for each dendrogram cluster
+library(PerformanceAnalytics) #correlations and EDA
 library(vegan) #PERMANOVA
+library(FactoMineR)
 ```
 ## Introduction
 
@@ -257,7 +259,8 @@ I won't have as much filtering to do with the Illinois osprey data since I have 
 
 Load in data and keep only individuals that started migration.
 ```{r}
-#The dataset is on github, so you can directly import the dataset to R. No special code required. 
+#The dataset is on github, so it is part of the project file
+PTT2014to2022Compiled <- read_csv("PTT2014to2022Compiled.csv")
 IL_OspreyData<-as.data.frame(PTT2014to2022Compiled)
 #I explored this data earlier in the year, and determined these were the individuals that started migration.
 keep<-c("2016_35D_14700", "2017_47D_171072", "2019_69D_180325", "2022_27R_220453", "2022_26R_234626", "2020_06R_202512", "2017_44D_171073", "2014_14D_139465", "2020_73D_202511")
@@ -849,12 +852,14 @@ Then I will add independent variables
 Latitude<-Osprey_Data %>%
   group_by(migrationEvent) %>%
   summarise(max(location_lat))
+#Load in metadata. This is also part of the project file
+IndividualMetadata <- read_csv("IndividualMetadata.csv")
 #adjust the names so that I can merge this data with the metadata file. 
 Latitude$migrationEvent<-gsub(" ", ".", Latitude$migrationEvent)
 Latitude$migrationEvent[1:9]<-sub("^","X",Latitude$migrationEvent[1:9])
 IndividualMetadata<-merge(Latitude, IndividualMetadata, by.x = "migrationEvent", by.y = "TrackId")
 
-#merge dataframes and keep only the needed columns and rename the columns
+#merge dataframe, keep only the needed columns, rename the columns, and remove unknown sexes and ages
 OSPR_1hour_summary<-merge(OSPR_1hour_summary, IndividualMetadata, by.x = "trackId", by.y = "migrationEvent")
 OSPR_1hour_summary<-OSPR_1hour_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "ID"] <- "Individual"
@@ -865,6 +870,8 @@ names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "Migration Year"] <- "Mi
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "Year Born"] <- "Birth_Year"
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "max(location_lat)"] <- "Start_Lat"
 OSPR_1hour_summary$duration<-as.numeric(OSPR_1hour_summary$duration)
+OSPR_1hour_summary<-filter(OSPR_1hour_summary, Sex != "Unkown") #124 migration events with 78 individuals
+OSPR_1hour_summary<-filter(OSPR_1hour_summary, Age != "Unkown")
 
 OSPR_3hour_summary<-merge(OSPR_3hour_summary, IndividualMetadata, by.x = "trackId", by.y = "migrationEvent")
 OSPR_3hour_summary<-OSPR_3hour_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
@@ -876,6 +883,8 @@ names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "Migration Year"] <- "Mi
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "Year Born"] <- "Birth_Year"
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "max(location_lat)"] <- "Start_Lat"
 OSPR_3hour_summary$duration<-as.numeric(OSPR_3hour_summary$duration)
+OSPR_3hour_summary<-filter(OSPR_3hour_summary, Sex != "Unkown")
+OSPR_3hour_summary<-filter(OSPR_3hour_summary, Age != "Unkown")
 
 OSPR_1day_summary<-merge(OSPR_1day_summary, IndividualMetadata, by.x = "trackId", by.y = "migrationEvent")
 OSPR_1day_summary<-OSPR_1day_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
@@ -887,6 +896,8 @@ names(OSPR_1day_summary) [names(OSPR_1day_summary) == "Migration Year"] <- "Migr
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "Year Born"] <- "Birth_Year"
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "max(location_lat)"] <- "Start_Lat"
 OSPR_1day_summary$duration<-as.numeric(OSPR_1day_summary$duration)
+OSPR_1day_summary<-filter(OSPR_1day_summary, Sex != "Unkown")
+OSPR_1day_summary<-filter(OSPR_1day_summary, Age != "Unkown")
 
 OSPR_3day_summary<-merge(OSPR_3day_summary, IndividualMetadata, by.x = "trackId", by.y = "migrationEvent")
 OSPR_3day_summary<-OSPR_3day_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
@@ -898,49 +909,144 @@ names(OSPR_3day_summary) [names(OSPR_3day_summary) == "Migration Year"] <- "Migr
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "Year Born"] <- "Birth_Year"
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "max(location_lat)"] <- "Start_Lat"
 OSPR_3day_summary$duration<-as.numeric(OSPR_3day_summary$duration)
+OSPR_3day_summary<-filter(OSPR_3day_summary, Sex != "Unkown")
+OSPR_3day_summary<-filter(OSPR_3day_summary, Age != "Unkown")
 ```
 
 
 #### Exploratory data analysis
 
-First I will look at the distribution of data for each sampling frequency
+First I will look at the distribution of data for each sampling frequency using histograms, correlation, and PCA
 ```{r}
-#normality of numeric data using Hmisc package
-hist.data.frame(OSPR_1hour_summary[,4:10]) 
-hist.data.frame(OSPR_3hour_summary[,4:10])
-hist.data.frame(OSPR_1day_summary[,4:10])
-hist.data.frame(OSPR_3day_summary[,4:10])
-#only absolute angle is somewhat normally distributed. 
+#normality and correlation of dependent variables using 'PerformanceAnalytics' package
+chart.Correlation(OSPR_1hour_summary[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+chart.Correlation(OSPR_3hour_summary[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+chart.Correlation(OSPR_1day_summary[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+chart.Correlation(OSPR_3day_summary[, 4:10], histogram=TRUE, pch=19, method = "spearman")
 
-#Next lets look at correlation between variables
-plot(OSPR_1hour_summary[,4:10])
-cor(OSPR_1hour_summary[,4:10], method = "spearman")
-#total distance and duration; sinuosity and duration seem to be correlated
-plot(OSPR_3hour_summary[,4:10])
-cor(OSPR_3hour_summary[,4:10], method = "spearman") #duration and total distance; sinuosity and duration correlated
-plot(OSPR_1day_summary[,4:10])
-cor(OSPR_1day_summary[,4:10], method = "spearman")#duration and total distance; duration and fpt more correlated and duration and sinuosity less correlated. 
-plot(OSPR_3day_summary[,4:10])
-cor(OSPR_3day_summary[,4:10], method = "spearman", use = "complete.obs") #fpt, speed, distance all correlated with duration. Note missing values for some birds. These birds cannot be included in the HCA. 
-OSPR_3day_summary<-na.omit(OSPR_3day_summary)
+#positive high correlation between sinuosity and duration (maintained); distance and duration correlated (but strength of correlation decreases with increasing sampling frequency); speed and duration negatively correlated with higher degree of correlation as sampling frequency decreases
 
-#normalize data between 0-1. Needed for HCA and Hopkins statistic
-OSPR_1hour_norm<-as.data.frame(lapply
-                               (OSPR_1hour_summary[,4:10], min_max_norm))
-OSPR_3hour_norm<-as.data.frame(lapply
-                               (OSPR_3hour_summary[,4:10], min_max_norm))
-OSPR_1day_norm<-as.data.frame(lapply
-                               (OSPR_1day_summary[,4:10], min_max_norm))
-OSPR_3day_norm<-as.data.frame(lapply
-                               (OSPR_3day_summary[,4:10], min_max_norm))
 
-#clustering potential of data
-hopkins(OSPR_1hour_norm) # 0.9999~
-hopkins(OSPR_3hour_norm) # 0.9996
-hopkins(OSPR_1day_norm) #0.999
-hopkins(OSPR_3day_norm) #0.999
-#all of the data has high clustering potential so it is not uniformly distributed since the values are close to 1. No need for a PCA.
+#Next I will run a PCA and visualize my different groupings:
+OSPR_1hour_PCA<-PCA(OSPR_1hour_summary[, 4:10], scale.unit = T, graph = F) #PCA function automatically normalizes my data with scale.unit = T
+OSPR_3hour_PCA<-PCA(OSPR_3hour_summary[, 4:10], scale.unit = T, graph = F)
+OSPR_1day_PCA<-PCA(OSPR_1day_summary[, 4:10], scale.unit = T, graph = F)
+OSPR_3day_PCA<-PCA(OSPR_3day_summary[, 4:10], scale.unit = T, graph = F)
+
+#I will make a biplot, but the biplot only shows the first two PCs. A scree-plot will show me how much of the variance of my data is represented
+fviz_eig(OSPR_1hour_PCA, addlabels = T) #57.3% in first two, 73.9% in first three
+fviz_eig(OSPR_3hour_PCA, addlabels = T) #55.5% in first two, 71.9% in first three
+fviz_eig(OSPR_1day_PCA, addlabels = T) #53.4% in first two, 69.8%
+fviz_eig(OSPR_3day_PCA, addlabels = T) #56% in first two, 70.8%
+# the variance represented by the first two and three components is not that different between datasets
+
+#Lets look at a PCA bi-plot to see how variables relate
+plot(OSPR_1hour_PCA, choix = "var", title = "1-hour PCA")
+plot(OSPR_3hour_PCA, choix = "var", title = "1-hour PCA") #How the variables make up the PCs does not change between the 1 and 3 hour sampling frequencies. Some change in the magnitude of contribution for some variables, but not a lot. 
+plot(OSPR_1day_PCA, choix = "var", title = "1-hour PCA") #turning speed becomes negligible. 
+plot(OSPR_3day_PCA, choix = "var", title = "1-hour PCA")
+#The contribution of migration speed, total distance, and absolute angle to the first two PCs are the most constant characteristic for all plots. 
+
+
+#Now lets look at relationship at the variance and overlap between sex, age, flyway, and origin. I'll need to turn these variables into factors to use them in the plot
+OSPR_1hour_summary$Sex<-as.factor(OSPR_1hour_summary$Sex)
+OSPR_3hour_summary$Sex<-as.factor(OSPR_3hour_summary$Sex)
+OSPR_1day_summary$Sex<-as.factor(OSPR_1day_summary$Sex)
+OSPR_3day_summary$Sex<-as.factor(OSPR_3day_summary$Sex)
+OSPR_1hour_summary$Age<-as.factor(OSPR_1hour_summary$Age)
+OSPR_3hour_summary$Age<-as.factor(OSPR_3hour_summary$Age)
+OSPR_1day_summary$Age<-as.factor(OSPR_1day_summary$Age)
+OSPR_3day_summary$Age<-as.factor(OSPR_3day_summary$Age)
+OSPR_1hour_summary$Flyway<-as.factor(OSPR_1hour_summary$Flyway)
+OSPR_3hour_summary$Flyway<-as.factor(OSPR_3hour_summary$Flyway)
+OSPR_1day_summary$Flyway<-as.factor(OSPR_1day_summary$Flyway)
+OSPR_3day_summary$Flyway<-as.factor(OSPR_3day_summary$Flyway)
+OSPR_1hour_summary$Origin<-as.factor(OSPR_1hour_summary$Origin)
+OSPR_3hour_summary$Origin<-as.factor(OSPR_3hour_summary$Origin)
+OSPR_1day_summary$Origin<-as.factor(OSPR_1day_summary$Origin)
+OSPR_3day_summary$Origin<-as.factor(OSPR_3day_summary$Origin)
+
+# PCA biplots
+
+fviz_pca_ind(OSPR_1hour_PCA, 
+             geom = "point", 
+             label = "none", 
+             habillage = OSPR_1hour_summary$Origin, 
+             addEllipses=TRUE, ellipse.level=0.95)
+fviz_pca_ind(OSPR_3hour_PCA, 
+             geom = "point", 
+             label = "none", 
+             habillage = OSPR_3hour_summary$Origin, 
+             addEllipses=TRUE, ellipse.level=0.95)
+fviz_pca_ind(OSPR_1day_PCA, 
+             geom = "point", 
+             label = "none", 
+             habillage = OSPR_1day_summary$Origin, 
+             addEllipses=TRUE, ellipse.level=0.95)
+fviz_pca_ind(OSPR_3day_PCA, 
+             geom = "point", 
+             label = "none", 
+             habillage = OSPR_3day_summary$Origin, 
+             addEllipses=TRUE, ellipse.level=0.95)
+
+#Does not seem there are difference between sexes or between time period for sexes
+#Some difference between adults and juveniles seem to exist in that juveniles have more variable migration strategies (more variance within the data) than adults. Dispersion differences become less apparent as the sampling frequency becomes courser
+#Some difference in migration strategies seem to exist between route choices. Coast of Mexico different than the other two routes, although there really isn't sufficient data to make conclusions. CAR route is fairly  constant between sampling frequency, probably because it has the most data. 
+#No differences between origins
 ```
+
+#### PERMANOVA and models
+
+```{r}
+# 1-hour
+# Are osprey leap-frog migrants? do birds that migrate further, start further north?
+plot(OSPR_1hour_summary$total_dist, OSPR_1hour_summary$Start_Lat)
+summary(lm(total_dist ~ Start_Lat, data = OSPR_1hour_summary)) # Apparently not...
+# What if we added sex as a level since female birds are known to migrate further than males? We can do this via a multiple linear regression model.
+ggplot(OSPR_1hour_summary, aes(x=Start_Lat, y = total_dist, col = Sex)) +
+  geom_point()
+boxplot(total_dist~Sex, data = OSP1hrSum[,8:26])
+OSPR_1hour_summary_Sex<-filter(OSPR_1hour_summary, Sex != "Unkown")
+Anova(lm(total_dist~Start_Lat + Sex, data = OSPR_1hour_summary_Sex))
+#hmmmm not seeing much correlation here between latitude and total distance but sex does seem to be an influence. Lets add some more variables including sex, age, latitude, Birth_Year, Flyway, Migration_Year, and Origin
+OSPR_1hour_summary_filter<-filter(OSPR_1hour_summary, Sex != "Unkown") #139 migration events
+OSPR_1hour_summary_filter<-filter(OSPR_1hour_summary_filter, Age != "Unkown")
+Anova(lm(total_dist~Start_Lat + Sex + Age + Birth_Year + Flyway + Migration_Year + Origin, data = OSPR_1hour_summary_Sex)) #migration year, age, and sex seem to be the influencing factors. 
+
+#But what about the relationship between these independent variables and the fact that my data is non-normally distributed? What is the relationship of my variables with the rest of the dependent variables? We need a multivariate non-parametric test to answer:
+  # 1. Which independent variables show distinct strategies for each level?
+    # * Does strategy differ between age, sex, flyway, starting Latitude, origin, or Migration_Year, or
+        # Birth_Year?
+  # 2. Which characteristics contribute to differences between groups?
+
+
+
+
+dis_1hour <- vegdist(OSPR_1hour_summary_filter[,4:10])
+mod <- betadisper(dis_1hour, OSP1hrSum$k_3, type = "centroid")
+anova(mod) #does not meet assumptions and design is unbalanced
+plot(mod) #largest group has the most dispersion = PERMANOVA test will be overly conservative
+adonis2(dis_1hour ~ OSP1hrSum$k_3, method = "euclidean") #we still see a significant result so the groups differ in location as well as dispersion. 
+TukeyHSD(mod) #no diff between class 1 and 2, but differences between 1 and 3 and 2 and 3. 2 may be the optimum number of clusters
+```
+
+```{r}
+# 3-hour
+dis_3hour <- vegdist(OSP3hrSum[,1:7])
+mod2 <- betadisper(dis_3hour, OSP3hrSum$k_2, type = "centroid")
+anova(mod2) #meets assumptions. Variances are equally distributed
+plot(mod2) #visually they don't look that different
+adonis2(dis_1hour ~ OSP3hrSum$k_2, method = "euclidean") #No difference between the groups
+```
+
+```{r}
+# 1-Day
+```
+
+```{r}
+# 3-Day
+```
+
 
 #### Hiearchical Clustering Analysis
 ```{r}
@@ -1075,36 +1181,6 @@ fviz_dend(x = OSPR_3day_clust, lwd = 0.8, k = 3,
           rect_fill = T,
           horiz = T)
 ```
-
-#### PERMANOVA
-```{r}
-# 1-hour
-str(OSP1hrSum)
-dis_1hour <- vegdist(OSP1hrSum[,1:7])
-mod <- betadisper(dis_1hour, OSP1hrSum$k_3, type = "centroid")
-anova(mod) #does not meet assumptions and design is unbalanced
-plot(mod) #largest group has the most dispersion = PERMANOVA test will be overly conservative
-adonis2(dis_1hour ~ OSP1hrSum$k_3, method = "euclidean") #we still see a significant result so the groups differ in location as well as dispersion. 
-TukeyHSD(mod) #no diff between class 1 and 2, but differences between 1 and 3 and 2 and 3. 2 may be the optimum number of clusters
-```
-
-```{r}
-# 3-hour
-dis_3hour <- vegdist(OSP3hrSum[,1:7])
-mod2 <- betadisper(dis_3hour, OSP3hrSum$k_2, type = "centroid")
-anova(mod2) #meets assumptions. Variances are equally distributed
-plot(mod2) #visually they don't look that different
-adonis2(dis_1hour ~ OSP3hrSum$k_2, method = "euclidean") #No difference between the groups
-```
-
-```{r}
-# 1-Day
-```
-
-```{r}
-# 3-Day
-```
-
 
 
 
