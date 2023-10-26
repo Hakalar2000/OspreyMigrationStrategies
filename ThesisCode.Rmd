@@ -995,20 +995,149 @@ fviz_pca_ind(OSPR_3day_PCA,
 #No differences between origins
 ```
 
-#### PERMANOVA and models
+#### Statistical models
 
+Are osprey leap-frog migrants?
 ```{r}
 # 1-hour
-# Are osprey leap-frog migrants? do birds that migrate further, start further north?
+# Are osprey leap-frog migrants: do birds that migrate further, start further north?
 plot(OSPR_1hour_summary$total_dist, OSPR_1hour_summary$Start_Lat)
 summary(lm(total_dist ~ Start_Lat, data = OSPR_1hour_summary)) # Apparently not...
-# What if we added sex as a level since female birds are known to migrate further than males? We can do this via a multiple linear regression model.
-ggplot(OSPR_1hour_summary, aes(x=Start_Lat, y = total_dist, col = Sex)) +
+plot(OSPR_3hour_summary$total_dist, OSPR_3hour_summary$Start_Lat)
+summary(lm(total_dist ~ Start_Lat, data = OSPR_3hour_summary)) #nope
+plot(OSPR_1day_summary$total_dist, OSPR_1day_summary$Start_Lat)
+summary(lm(total_dist ~ Start_Lat, data = OSPR_1day_summary)) #nope
+plot(OSPR_3day_summary$total_dist, OSPR_3day_summary$Start_Lat)
+summary(lm(total_dist ~ Start_Lat, data = OSPR_3day_summary)) #nope
+#osprey are not leap-frog migrants
+```
+
+Do osprey exhibit differential migration between sexes where one sex migrates further than another?
+```{r}
+#1-hour
+#Female osprey are known to migrate further than males: Is this true and does it influence the trends above?
+OSPR_1hour_summary_complete<-filter(OSPR_1hour_summary, Status !="Incomplete")
+ggplot(OSPR_1hour_summary_complete, aes(x=Start_Lat, y = total_dist, col = Sex)) +
   geom_point()
-boxplot(total_dist~Sex, data = OSP1hrSum[,8:26])
-OSPR_1hour_summary_Sex<-filter(OSPR_1hour_summary, Sex != "Unkown")
-Anova(lm(total_dist~Start_Lat + Sex, data = OSPR_1hour_summary_Sex))
+boxplot(total_dist~Sex, data = OSPR_1hour_summary_complete)
+#check to make sure variances are homogeneous (assumption of the unpaired two way t-test).
+M_1hour<-subset(OSPR_1hour_summary_complete, Sex == "M")
+F_1hour<-subset(OSPR_1hour_summary_complete, Sex == "F")
+chart.Correlation(M_1hour[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+chart.Correlation(F_1hour[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+var.test(M_1hour$total_dist, F_1hour$total_dist) #p-value>0.05 by a lot. no siginficant differences between the variances. The distance data seems to be normally distributed from the corr plots above = we can run the t-test
+t.test(M_1hour$total_dist, F_1hour$total_dist, var.equal=TRUE) #significant p = 0.022.Total distance traveled by males is different from females. 
+mean(F_1hour$total_dist)
+mean(M_1hour$total_dist)
+#females travel further than males by an average of about 1000 kilometers. 
+
+# 3-hours
+OSPR_3hour_summary_complete<-filter(OSPR_3hour_summary, Status !="Incomplete")
+ggplot(OSPR_3hour_summary_complete, aes(x=Start_Lat, y = total_dist, col = Sex)) +
+  geom_point()
+boxplot(total_dist~Sex, data = OSPR_3hour_summary_complete)
+#check to make sure variances are homogeneous (assumption of the unpaired two way t-test).
+M_3hour<-subset(OSPR_3hour_summary_complete, Sex == "M")
+F_3hour<-subset(OSPR_3hour_summary_complete, Sex == "F")
+chart.Correlation(M_3hour[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+chart.Correlation(F_3hour[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+var.test(M_3hour$total_dist, F_3hour$total_dist) #p-value>0.05 by a lot. no siginficant differences between the variances. The distance data seems to be normally distributed from the corr plots above = we can run the t-test
+t.test(M_3hour$total_dist, F_3hour$total_dist, var.equal=TRUE) #significant p = 0.024.Total distance traveled by males is different from females. 
+mean(F_3hour$total_dist)
+mean(M_3hour$total_dist)
+#females travel further than males by an average of about 900 kilometers.
+
+# 1-day
+OSPR_1day_summary_complete<-filter(OSPR_1day_summary, Status !="Incomplete")
+ggplot(OSPR_1day_summary_complete, aes(x=Start_Lat, y = total_dist, col = Sex)) +
+  geom_point()
+boxplot(total_dist~Sex, data = OSPR_1day_summary_complete)
+#check to make sure variances are homogeneous (assumption of the unpaired two way t-test).
+M_1day<-subset(OSPR_1day_summary_complete, Sex == "M")
+F_1day<-subset(OSPR_1day_summary_complete, Sex == "F")
+chart.Correlation(M_1day[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+chart.Correlation(F_1day[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+var.test(M_1day$total_dist, F_1day$total_dist) #p-value>0.05 by a lot. no siginficant differences between the variances. The distance data seems to be normally distributed, but less so than from the other two sampling periods from the corr plots above = we can run the t-test
+t.test(M_1day$total_dist, F_1day$total_dist, var.equal=TRUE) #significant p = 0.023.Total distance traveled by males is different from females. 
+mean(F_1day$total_dist)
+mean(M_1day$total_dist)
+#females travel further than males by an average of about 900 kilometers, although the actual distance traveled continues to decrease as the sampling frequency becomes courser
+
+# 3-day
+OSPR_3day_summary_complete<-filter(OSPR_3day_summary, Status !="Incomplete")
+ggplot(OSPR_3day_summary_complete, aes(x=Start_Lat, y = total_dist, col = Sex)) +
+  geom_point()
+boxplot(total_dist~Sex, data = OSPR_3day_summary_complete)
+#check to make sure variances are homogeneous (assumption of the unpaired two way t-test).
+M_3day<-subset(OSPR_3day_summary_complete, Sex == "M")
+F_3day<-subset(OSPR_3day_summary_complete, Sex == "F")
+chart.Correlation(M_3day[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+chart.Correlation(F_3day[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+var.test(M_3day$total_dist, F_3day$total_dist) #p-value>0.05 by a lot, however the heteroscedasticity is becoming more apparent = the variances between the two data sets are becoming more different, yet there are still no significant differences between the variances. The distance data seems to be normally distributed, but less so than from the other two sampling periods from the corr plots above = we can run the t-test
+t.test(M_3day$total_dist, F_3day$total_dist, var.equal=TRUE) #significant p = 0.022.Total distance traveled by males is different from females. 
+mean(F_3day$total_dist)
+mean(M_3day$total_dist)
+
+#conclusions: Females travel further on average than males when they start at latitudes below 40 or above 45. Females seem to travel similar distances to males when they start mid-latitude
+```
+
+Do osprey exhibit differential migration between age groups where one age group migrates further than another or has a more sinuous flight path?
+```{r}
+#1-hour
+ggplot(OSPR_1hour_summary_complete, aes(x=Start_Lat, y = total_dist, col = Age)) +
+  geom_point()
+boxplot(total_dist~Age, data = OSPR_1hour_summary_complete)
+J_1hour<-subset(OSPR_3hour_summary_complete, Age == "Juvenile")
+A_1hour<-subset(OSPR_3hour_summary_complete, Age == "Adult")
+chart.Correlation(J_1hour[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+chart.Correlation(A_1hour[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+var.test(J_1hour$total_dist, A_1hour$total_dist) #no difference
+t.test(J_1hour$total_dist, A_1hour$total_dist, var.equal=TRUE) #There is a significant difference (birds at higher latitudes where juveniles will fly less distance than adults)
+
+#3-hour
+ggplot(OSPR_3hour_summary_complete, aes(x=Start_Lat, y = total_dist, col = Age)) +
+  geom_point()
+boxplot(total_dist~Age, data = OSPR_3hour_summary_complete)
+J_3hour<-subset(OSPR_3hour_summary_complete, Age == "Juvenile")
+A_3hour<-subset(OSPR_3hour_summary_complete, Age == "Adult")
+chart.Correlation(J_3hour[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+chart.Correlation(A_3hour[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+var.test(J_3hour$total_dist, A_3hour$total_dist) #no difference
+t.test(J_3hour$total_dist, A_3hour$total_dist, var.equal=TRUE) #There is a significant difference (birds at higher latitudes where juveniles will fly less distance than adults)
+
+#1-day
+ggplot(OSPR_1day_summary_complete, aes(x=Start_Lat, y = total_dist, col = Age)) +
+  geom_point()
+boxplot(total_dist~Age, data = OSPR_1day_summary_complete)
+J_1day<-subset(OSPR_1day_summary_complete, Age == "Juvenile")
+A_1day<-subset(OSPR_1day_summary_complete, Age == "Adult")
+chart.Correlation(J_1day[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+chart.Correlation(A_1day[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+var.test(J_1day$total_dist, A_1day$total_dist) #no difference
+t.test(J_1day$total_dist, A_1day$total_dist, var.equal=TRUE) #There is a significant difference (birds at higher latitudes where juveniles will fly less distance than adults)
+
+#3-day
+ggplot(OSPR_3day_summary_complete, aes(x=Start_Lat, y = total_dist, col = Age)) +
+  geom_point()
+boxplot(total_dist~Age, data = OSPR_3day_summary_complete)
+J_3day<-subset(OSPR_3day_summary_complete, Age == "Juvenile")
+A_3day<-subset(OSPR_3day_summary_complete, Age == "Adult")
+chart.Correlation(J_3day[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+chart.Correlation(A_3day[, 4:10], histogram=TRUE, pch=19, method = "spearman")
+var.test(J_3day$total_dist, A_3day$total_dist) #no difference
+t.test(J_3day$total_dist, A_3day$total_dist, var.equal=TRUE) #significant difference
+
+#Conclusion: I saw a significant difference between the distance traveled by juveniles compared to adults. Juveniles supposedly traveled less distance than adults, however I do not think these results reflect the biology of osprey. All male osprey starting at higher latitudes (where differentiation between sexes occurs) were juvenile while all females were adults. This means that my data actually reflects sexual differentiation rather than age. When looking at lower and mid latitudes, juveniles were evenly mixed with adults. Finally, my p-values for distance ~ age were similar suggesting that sex may have skewed my results.
+#The actual influence of sex, age, and latitude on distance is still unknown without a larger sample size of both adult and juvenile females from various latitudes. 
+```
+
+Migration strategies should be impacted by the distance the bird flies, the sex, and the age of the bird. I do not have enough data on origin of the birds to make any conclusions. 
+```{r}
+#Hypothesis: Females and males will exhibit different migration strategies since females travel around 1000 kilometers more on average than males.
+#migration strategy will not include distance as a characteristic anymore as distance is thought to influence strategy. It is now an independent variable. 
+
 #hmmmm not seeing much correlation here between latitude and total distance but sex does seem to be an influence. Lets add some more variables including sex, age, latitude, Birth_Year, Flyway, Migration_Year, and Origin
+
 OSPR_1hour_summary_filter<-filter(OSPR_1hour_summary, Sex != "Unkown") #139 migration events
 OSPR_1hour_summary_filter<-filter(OSPR_1hour_summary_filter, Age != "Unkown")
 Anova(lm(total_dist~Start_Lat + Sex + Age + Birth_Year + Flyway + Migration_Year + Origin, data = OSPR_1hour_summary_Sex)) #migration year, age, and sex seem to be the influencing factors. 
@@ -1029,6 +1158,7 @@ plot(mod) #largest group has the most dispersion = PERMANOVA test will be overly
 adonis2(dis_1hour ~ OSP1hrSum$k_3, method = "euclidean") #we still see a significant result so the groups differ in location as well as dispersion. 
 TukeyHSD(mod) #no diff between class 1 and 2, but differences between 1 and 3 and 2 and 3. 2 may be the optimum number of clusters
 ```
+
 
 ```{r}
 # 3-hour
