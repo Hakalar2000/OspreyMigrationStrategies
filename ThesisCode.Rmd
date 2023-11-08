@@ -5,12 +5,11 @@ date: "10/3/2023"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 #personal access token if needed: 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
 #Data retrieval and manipulation
 library(move)
-library(readr) #download CSV using URL link from github
 library(sp)
 library(moveVis)
 #organizating, filtering, cleaning data
@@ -49,75 +48,87 @@ plotshit<-function(y) {
 } #function for batch plotting in a for loop
 
 #data anlaysis
-library(Hmisc) #for histograms
-library(hopkins) #hopkins statistic for clustering potential
-min_max_norm <- function(x) {
-    (x - min(x)) / (max(x) - min(x))
-  }#normalize data
-library(cluster) #linkage methods (hclust to make dendrogram is from the stats package)
-library(stats) #dendrogram
-library(dendextend) #modify dendrogram
-library(factoextra) #modify dendrograms again
-library(NbClust)#optimal clusters
 library(PerformanceAnalytics) #correlations and EDA
+library(FactoMineR) #PCA biplots
+library(hopkins) #hopkins statistic for clustering potential
+library(cluster) #linkage methods 
+library(stats) #PCA, HCA and dendrogram
+library(NbClust)#optimal clusterss
+library(dendextend) #modify dendrogram
+library(ComplexHeatmap) #heatmaps
+library(RColorBrewer) #color palette customization 
 library(vegan) #PERMANOVA
-library(FactoMineR)
 ```
+
 ## Introduction
 
 Hey there! If you are viewing this article, you are interested in how I analyzed osprey tracking data for my final thesis, completed in Spring 2024. I will guide through a step by step process. I have used R Markdown, which may be new for you. This document will not go over the nuances I used to code the Markdown file. For simplicity and privacy, not all code lines are shown in the Rmarkdown output. If you want to see the entire code script, you will need to open the RStudio project, accessible through the Osprey Shared Drive or by contacting me directly. I have done my best to annotate my code for easy interpret ability.
 
 
 ## Packages
-Here is a list of packages and functions in the order of their first appearance that I used.You will likely have to use the function install.packages ("Package Name") before you can access the package using the library (Package Name) function. I had a few instances where I had supporting packages downloaded, but they were not up-to-date nor could I force them to update. For these packages I had to go into this PC < documents < R and locally delete the packages that were not updating and then re-install them. I've made notes next to supporting packages for which I did this. 
+Here is a list of packages and functions in the order of their first appearance that I used followed by custom functions and R objects.You will likely have to use the function install.packages ("Package Name") before you can access packages using the library (Package Name) function. I had a few instances where I had supporting packages downloaded, but they were not up-to-date nor could I force them to update. For these packages I had to go into this PC < documents < R and locally delete the packages that were not updating and then re-install them. Many of these packages have dependencies (they require other packages) so do not be alarmed if download takes a while. The dependencies are also downloading. Lastly, some packages are not from CRAN,rather they are from personal repositories on github or from Bioconductor These packages require special download code. To download packages in github repos, you need to use the install_github("username/repo/package file name",) from the 'devtools' package. For Bioconductor packages you need to use the install("package name") function from the 'BioManager' package.
+* CRAN: install.packages() from base R *
+* BioConductor: install() from BioManager **
+* Personal Repositories: install_github() from devtools ***
 
 ```{r, eval=FALSE}
-library(move) #download, manipulate, and analyze telemetry data
-library(dplyr) #Filtering data via the filter() function. Deleted and re installed rlang
-library(stats) #find the median and other statistical operations
+library(move) # download and retrieve movement data and characteristics *
+library(sp) # Create sp spatial objects *
+library(moveVis) # transform dataframes into move objects ***
+library(plyr) # apply a function to a list *
+library(dplyr) # manipulate dataframes and filter data *
+library(stats) # some statistic tools plus HCA function *
+library(lutz) # Determine if there was daylight during a GPS fix *
+library(solaR) # Calculate local solar time *
+library(lubridate) # Manipulate time/date formats *
+library(data.table) # Work with data tables *
+library(migrateR) # Calculate start/end dates of migration **
+library(adehabitatLT) # Find fpt and displacement *
+library(ggplot2) # graphing/mapping *
+library(sf) # sf spatial objects in R for mapping *
+library(tmap) # world country shapefiles *
+library(PerformanceAnalytics) # Correlations and EDA *
+library(FactoMineR) # PCA biplots *
+library(hopkins) # Hopkins statistic for clustering potential *
+library(cluster) # Linkage methods *
+library(NbClust)# Optimal clusterss *
+library(dendextend) # Modify dendrogram *
+library(ComplexHeatmap) # Heatmaps **
+library(RColorBrewer) # Color palette customization *
+library(vegan) # PERMANOVA *
+
+
+wgs84<-CRS("+proj=longlat +datum=WGS84") # GCS
+azim_orign = CRS("+proj=aeqd +lat_0=24.43 +lon_0=-82.74 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs") # Azimuthal Equidistant PCS
+data(World) # Country Shapefiles
+world_sf<-st_transform(World, azim_orign) #Country Shapefiles projected with custom PCS
 find_mode <- function(x) {
   u <- unique(x)
   tab <- tabulate(match(x, u))
   u[tab == max(tab)]
-} #no built in function for mode in R so I got this one from the web. 
-library(ggplot2) #dynamic, mapping and graphing
-library(sf) #displaying coordinate data in ggplot
-library(rgdal) #creating custom PCS via the CRS() function. 
-wgs84<-CRS("+proj=longlat +datum=WGS84") #GCS in WGS 1984, required for a PCS.
-azim_orign = CRS("+proj=aeqd +lat_0=25 +lon_0=-90 +x_0=0 +y_0=0 
-                 +ellps=WGS84 +datum=WGS84 
-                 +units=m +no_defs") #PCS in custom azimuthal equidistant projection
-library(tmap) #world polygon data
-data(World) #world data with country polygons needed for mapping
-world_sf<-st_transform(World, azim_orign) #projected world data
+} # Mode function
 plotshit<-function(y) {
   ggplot(y) +
     geom_sf(data = world_sf, fill = "white") +
     geom_sf(size = 1, aes(color = year)) +
-    coord_sf(datum = st_crs(azim_orign), xlim = c(-2000000, 8000000), ylim = c(3000000, -3000000)) +
+    coord_sf(datum = st_crs(azim_orign), xlim = c(-4000000, 3000000), ylim = c(3500000, -2500000)) +
     theme(legend.position = "bottom", legend.text = element_text(size = 7)) +
     labs(color = "year") +
     ggtitle(paste0(y$trackId))
-} #function for batch plotting in a for loop
-library(lubridate) #manipulate date/timestamps  the proper 
-library(solaR) #calculate solar time for IL osprey data
-library(sp) #spatial object needed for an ltraj object and to find center of data
-library(adehabitatLT) #create an ltraj object needed to run functions in migrateR
-library(devtools) #Needed to install migrateR. Deleted and re installed htmltools
-library(migrateR) #Could not build vignettes. Also used force = T and updated some packages.See references for link to vignettes and github code repository with download instructions. 
-library(data.table) #data frame list manipulation
-library(moveVis) #for converting a dataframe into a move object
+} # Batch Map raw data by individual bird and year function
 ```
 
-## Downloading and Filter Tracking Data
+
+## Downloading and Filtering Tracking Data
 
 #### Downloading and Exploring Data From Movebank
-First, If you do not have a Movebank account, you must make a free account before you can access any of the data.
+First, If you do not have a Movebank account, you must make a free account before you can access any of the data. Even after you make an account, not all data is available for download. There are three levels of privacy: downloadable (orange), tracks and study present with no download (blue), and studies where no tracks can be seen and no download is available (grey). More information about navigating Movebank can be found on the Movebank website: <https://www.movebank.org/cms/movebank-main>
 
 I pulled data from three sources:
-1. Bierregaard East Coast Osprey Tracking - open-access download (permission to use in publications)
-2. Barb Jensen's Michigan Osprey Tracks - open-access download (permission to use in publications)
-3. The Montana osprey Satellite Tracking Program - Permission-access only
+
+1. Bierregaard East Coast Osprey Tracking - open-access download (permission needed to use in publications)
+2. Barb Jensen's Michigan Osprey Tracks - open-access download (permission needed to use in publications)
+3. *The Montana osprey Satellite Tracking Program - Permission-access only*
 
 To pull data from movebank you will use the 'move' package. Before you can pull data with the move package you will need to create an object called loginStored which contains your login info. I have not included the actual code since I do not want to give out my password. Your code will look something like this:
 ```{r, eval=FALSE}
@@ -128,8 +139,9 @@ loginStored <- movebankLogin(username = "UserName", password = "Password")
 loginStored <- movebankLogin(username = "lhaka2", password = "!ShamaJ2016!")
 ```
 
-Next you will download the Movebank study synopsis and summary tables. The synopsis can provide details on how many individuals were tracked, the time frame tracking occurred, the type of device used, and permission/privacy restrictions. The synopsis along with the Movebank study name can be located on the Movebank website along with a handy interactive map. It is possible to search for studies within R, but it is honestly easier to use the web-based platform. The summary table will provide a summary of each individual tracked per device. This means that some individuals may have multiple entries in a summary table to account for different tracking mechanisms. We can use the summary table info to fill out demographic info and determine how many individuals were tracked using GPS or GPS/GSM devices. 
-```{r}
+Next you will download the Movebank study synopsis and summary tables. Finding studies is easiest using the interactive map on the Movebank Website. It is possible to search for studies within R, but you will save yourself some time using the website.The synopsis can provide details on how many individuals were tracked, the time frame tracking occurred, the type of device used, demographic information (sex, age, etc.), and permission/privacy restrictions. The summary table will provide a summary of each individual tracked per device. This means that some individuals may have multiple entries in a summary table to account for different tracking mechanisms. We can use the summary table info to partially fill out demographic information and determine how many individuals were tracked using GPS or GPS/GSM devices. I kept a running document of individuals with their demographic and geographic information that will come in handy later on. 
+
+```{r, warning=FALSE}
 #download Bierregaard data Synopsis
 getMovebankStudy(study ="Osprey Bierregaard North and South America", login = loginStored)
 #download Bierregaard summary table
@@ -143,7 +155,7 @@ table(Bierregaard_Osprey_summary$animal_life_stage, Bierregaard_Osprey_summary$a
 # While this table is helpful at a glance, I found I could fill in life stage by looking at the birth date if include and comparing it with the tracking year. I also consulted the comments for clues to age and sex. I did this by going to the environment pane and clicking on the filtered summary table to open the full table. 
 ```
 
-```{r}
+```{r, warning=FALSE}
 #Barb Jensen's data
 getMovebankStudy(study ="Pandion haliaetus Osprey - SouthEast Michigan", login = loginStored)
 Jensen_Osprey_summary<-getMovebankReferenceTable(study ="Pandion haliaetus Osprey - SouthEast Michigan", 
@@ -152,12 +164,14 @@ Jensen_Osprey_summary<-filter(Jensen_Osprey_summary, Jensen_Osprey_summary$senso
 table(Jensen_Osprey_summary$animal_sex) #22 individuals total, 11 females, 8 males, and 3 unknown
 ```
 
-The summary tables give me an idea of the total number of individuals in each study and the sex and age of each individual. However, it does not tell me the number of fall migrations and whether those migrations were complete or not, does not tell if the individual started migration, and may have missing age data that can be determined from mapping the data. That said, the data sets are really large, so I can initially filter the data to make it easier to work with and plot. I will remove:
+The summary tables give me an idea of the total number of individuals in each study and the sex and age of each individual. However, it does not tell me the number of fall migrations and whether those migrations were complete or not, or if the individual even started migration. Age and sex data may also be missing. Sometimes sex is unknown, especially for juveniels, which are not sexually dimorphic. 
+
+The data sets are really large, so I filtered the data to make it easier to work with and plot. I will remove:
 * individuals with sampling frequencies courser than 1-hour (using mode and median)
-* GPS fixes outside of July-November (7-11)
+* GPS fixes outside of July-November (7-11) when osprey are at wintering, natal/breeding sites, or on spring migration
 * erroneous points that don't meet a defined biological/practical threshold.
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 #Download data from Movebank for GPS tracked individuals.This takes some time, but downloads data directly from Movebank. From the summary data, I filtered out only GPS tracked individuals. When downloading movebank data, I can specify which individuals I want in my dataset using animalName = (list of animal local identifiers)
 Bierregaard_Osprey<-getMovebankData(study ="Osprey Bierregaard North and South America",
                                     animalName = c(Bierregaard_Osprey_summary$animal_local_identifier),
@@ -184,7 +198,7 @@ Bierregaard_Osprey_Data <- Bierregaard_Osprey_DF_Filter %>%
   filter(sensor_type_id == 653 & month %in% c(6:12))
 ```
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 #All individuals are tracked via GPS so no need to specify which individuals to download. 
 Jensen_Osprey<-getMovebankData(study ="Pandion haliaetus Osprey - SouthEast Michigan",
                                     login = loginStored, removeDuplicatedTimestamps=TRUE) 
@@ -208,7 +222,7 @@ Jensen_Osprey_Data<-Jensen_Osprey_Data[!(Jensen_Osprey_Data$trackId %in% remove)
 unique(Jensen_Osprey_Data$trackId)
 ```
 
-To map the data from each study, I will use the 'ggplot', 'sf', 'rgdal', and base R functions. This includes a custom function I created to help batch map all of my data. Data on the background world countries will be obtained using 'tmap' and data will be projected using a custom aziumthal equidistant projection for now. 
+To map the data from each study, I will use the 'ggplot', which relys on 'sf' spatial objects for mapping purposes. I will map each individual bird, with tracks color-coded by year. This requires the custom 'plotshit' function and a for loop. Data on the background world countries is from the 'tmap' and data will be projected using a custom aziumthal equidistant projection. The actual projection used to map data is not all that important at the moment since we are not measuring anything, however the projection will be important later on. The projection was defined by using google maps to estimate the center of all of my data. 
 
 ```{r, fig.show="hold", out.width="10%"}
 #Spatially reference the Bierregaard data
@@ -227,7 +241,7 @@ for (i in names) {
 }
 #I will remove individuals that did not start migration or were tracked in 2007 (the tracks from this year are very thin: "Pearl 2013", "Rafael 2009","Luke 2007", "Aster 2017", "Chester 2014", "Felix 2007", "Claws 2007", "Claws 2008" "Mackenzie 2013", "Trepassey 2016", "Tucker 2011", "Jocelyn 2016", 
 
-#I will also remove tracks from specific years for some individuals since those migrations were not started or skipped (juveniles spend 18 months in wintering grounds during their first winter): "Rammie 2013", "Snowy 2012", "Thatcher 2011", "Penelope 2009", "Buck 2010", "Belle 2011", "Flow 2015", "Art 2013", "Artoo 2014", "Crabby 2015", "Borealis 2018", "Daphne 2017", "Weber 2014", "Nick 2017", "Ron 2015", "Woody 2015"
+#I will also remove tracks from specific years for some individuals since those migrations were not started or skipped (juveniles spend 18 months in wintering grounds during their first winter): "Rammie 2013", "Snowy 2012", "Thatcher 2011", "Penelope 2009", "Buck 2010", "Belle 2011", "Flow 2015", "Art 2013", "Artoo 2014", "Crabby 2015", "Borealis 2018", "Daphne 2017", "Weber 2014", "Nick 2017", "Ron 2015", "Woody 2015", "Rodney 2014"
 ```
 
 ```{r, fig.show="hold", out.width="10%"}
@@ -250,15 +264,14 @@ for (i in names) {
 #Remove tracks for years where migration did not happend: "X423.Humphries_DTE_Ozzie 2015", "X139005.Monroe.Julie 2017"
 ```
 
-The plots along with the summary data allow me to create an excel file with all the demographic info for each each migration event including the individual associated with each migration event. Migration events will be analyzed separately from each other. From the plots, I can also tell if some individuals were juveniles during their first migration and remove those that did not start migration.
+From the plots, I can get an idea of how many fall migration events occurred for each bird. Migration events will be analyzed separately from each other. I can also tell if some individuals were juveniles during their first migration as juveniles spend 18 months wintering and return to breeding areas at three-years old. Birds with years that were clearly spent in wintering habitats during the predicted migration period were classified as juveniles during their first recorded previous migration. Finally, I can remove migration events that did not happen. Some birds never left their breeding/natal grounds, which means they cannot be used in my analysis. I filter these birds out later along with points outside of the fall migration period after I combine all of my datasets.   
 
-For now this is as much as I can filter the Movebank data. I will have to filter out migration events that did not occur later and GPS points that fall outside of the migration time period. We will get to this later once all the datasets are combined. 
 
 #### Downloading and Exploring Data From the Illinois Osprey Program
-I won't have as much filtering to do with the Illinois osprey data since I have explored this data in the past and I know which individuals I should keep. I also know all individuals are GPS tracked and that only GPS points are included in the data set. I will still need to filter by month and take out erroneous points, but that is about all I have to do. I have plotted the data on a single map for reference. 
+This data can be obtained from the Osprey Shared drive. I have uploaded a pre-filtered version to my Github repository. This means that I can draw the data directly from the repository link while working in the project. I have explored this data in the past and I know which individuals I should keep. I also know all individuals are GPS tracked and that only GPS points are included in the data set. I will still need to filter by month and take out erroneous points, but that is about all I have to do. I have plotted the data on a single map for reference. 
 
 Load in data and keep only individuals that started migration.
-```{r}
+```{r, message=FALSE}
 #The dataset is on github, so it is part of the project file
 PTT2014to2022Compiled <- read_csv("PTT2014to2022Compiled.csv")
 IL_OspreyData<-as.data.frame(PTT2014to2022Compiled)
@@ -305,7 +318,9 @@ ggplot() +
   labs(color = "ID") 
 ```
 
-#### Combine Dataframes Into A Aingle Dataset And Create Migration Events IDs
+## Combine Dataframes Into A Aingle Dataset And Create Migration Events IDs
+
+Now it is time to combine all datasets into a single dataset to expedite the date filtering processes and migratory characteristics calculations. 
 ```{r}
 #keep only columns needed for analysis: time stamp, individual ID, year, month, lat, lon, columns for each data set. Make sure the names of each column are the same between all data sets. Use the str() function to look at column names
 IL_OspreyData<-IL_OspreyData[ ,c("ID", "Month", "Year", "timestamp", "location_lat", "location_long")] 
@@ -326,7 +341,7 @@ Osprey_Data$migrationEvent<-paste(Osprey_Data$trackId, Osprey_Data$year)
 length(unique(Osprey_Data$migrationEvent))
 
 #Remove migration events where migration did not occur (or are from 2007)
-remove<-c("Pearl 2013", "Rafael 2009","Luke 2007", "Aster 2017", "Chester 2014", "Felix 2007", "Claws 2007", "Claws 2008", "Mackenzie 2013", "Trepassey 2016", "Tucker 2011", "Jocelyn 2016", "Rammie 2013", "Snowy 2012", "Thatcher 2011", "Penelope 2009", "Buck 2010", "Belle 2011", "Flow 2015", "Art 2013", "Artoo 2014", "Crabby 2015", "Borealis 2018", "Daphne 2017", "Weber 2014", "Nick 2017", "Ron 2015", "Woody 2015", "X586.Brighton_Barb 2015", "X934.Kensington.Pebbles 2017", "X423.Humphries_DTE_Ozzie 2015", "X139005.Monroe.Julie 2017")
+remove<-c("Pearl 2013", "Rafael 2009","Luke 2007", "Aster 2017", "Chester 2014", "Felix 2007", "Claws 2007", "Claws 2008", "Mackenzie 2013", "Trepassey 2016", "Tucker 2011", "Jocelyn 2016", "Rammie 2013", "Snowy 2012", "Thatcher 2011", "Penelope 2009", "Buck 2010", "Belle 2011", "Flow 2015", "Art 2013", "Artoo 2014", "Crabby 2015", "Borealis 2018", "Daphne 2017", "Weber 2014", "Nick 2017", "Ron 2015", "Woody 2015", "Rodney 2014", "X586.Brighton_Barb 2015", "X934.Kensington.Pebbles 2017", "X423.Humphries_DTE_Ozzie 2015", "X139005.Monroe.Julie 2017")
 
 # factor levels will be set to 0 in the data frame, but won't actually be removed. I have to change to character data format to remove rows.
 Osprey_Data$migrationEvent<-as.character(Osprey_Data$migrationEvent)
@@ -336,7 +351,7 @@ length(unique(Osprey_Data$migrationEvent))
 
 #### Filter Start And End Dates
 
-Project the data and calculate NSD
+Project the data and calculate NSD. To calculate NSD and run the dispersal model, the datset will need to be project and transformed into an ltraj object using the custom azimuthal projection and the package 'adehabitatLT'. 
 ```{r}
 #Project data using custom azimuthal equidistant projection
 Osprey_Data_sf<-st_as_sf(x=Osprey_Data, coords = c("location_long", "location_lat"), crs = wgs84)
@@ -358,8 +373,8 @@ Osprey_trajr <- as.ltraj(coordinates(Osprey_trajr),
                           id=Osprey_trajr$migrationEvent, typeII=TRUE)
 ```
 
-Run the dispersal model and compared start/end dates with final recorded date
-```{r}
+Run the dispersal model to find start and end dates. I chose to use the dispersal model because I am analyzing only half of the ospreys' migration cycles. This means that the birds do not return to the area they started, which follows the definition of dispersal rather than migration or mixed migration within the dataset. If individuals appear with a warning "no dispersal model" then that individual either has to few points within its track or did not start migration. These migration events that have no associated model should be removed. Finally, tracks can be considered incomplete when the predicted end date of the model is after the last recorded GPS point an individual. 
+```{r, warning=FALSE}
 #Run the migrateR dispersal model
 Osprey_nsd<-mvmtClass(Osprey_trajr)
 Osprey_dispersal<-mvmt2dt(Osprey_nsd, mod = "disperser") #Note that some individuals did not fit dispersal patterns
@@ -384,9 +399,10 @@ Osprey_Data_FinalTrackDay$FinalDay<-Osprey_Data_FinalTrackDay$timestamp
 
 Osprey_StartEnd<-merge(Osprey_StartEnd, Osprey_Data_FinalTrackDay, by = "migrationEvent")
 Osprey_StartEnd<-Osprey_StartEnd[, c("migrationEvent", "date.Start", "date.End", "FinalDay", "month", "year", "location_lat", "location_long")]
+Osprey_StartEnd
 ```
 
-Now that we have start and end date we can filter out non-migration points. It should be noted that migration is defined by this model. The model is fairly simple and cannot take into account the actual complexity of migration events. For example, 26R spent 1 month at a location outside of his natal home range before continuing on migration without going back to his home range. Leaving his natal home range could be considered the start of his migration, or the directional flight to his wintering grounds from this pre-migratory stopover could be considered the start of migration. The model provides the later interpretation. 
+One limitation/caveate that should be noted about the model is that the model cannot take into account the actual complexity of migration events. For example, 26R spent 1 month at a location outside of his natal home range before continuing on migration without going back to his home range. Leaving his natal home range could be considered the start of his migration, or the directional flight to his wintering grounds from this pre-migratory stopover could be considered the start of migration. The model provides the later interpretation. 
 
 Filter GPS points by start/end dates and create 4 different datasets with different sampling frequencies. 
 ```{r}
@@ -404,7 +420,10 @@ for (i in events) {
 length(unique(df$migrationEvent)) #142 migration events and 115 individuals
 ```
 
+## Thin The Trajectory
 
+#### Transform the trajectory into a move stack object
+This is not as straightforward as it sounds. Coercing a dataframe object to a move object requires very specific formatting. To help with this I use the 'moveVis' package to transform my data into a move stack object. 
 ```{r}
 #Convert to a move object. To do this I had to use the moveVis package since the move function does not work well with actual dataframes. The move package has a number of very convinient functions that allow me to calculate a number of different movement characteristics and prep the data from analysis.
 OSPR<-df2move(df,
@@ -481,12 +500,11 @@ plot(OSPR_1day[[1]])
 plot(OSPR_3day[[1]])
 ```
 
-The data set is now filtered and ready for analysis!
 
-## Data Analysis
-Data analysis starts with summarizing the data for Hierarchical Clustering Analysis (HCA). I will then move onto exploratory data analysis, looking at the distribution of the data to determine normalcy. This will inform the test I use later on. I can also explore clustering potential which will inform my decision to reduce dimensionality using a PCA before HCA.  I will repeat all steps for each of the different sampling frequencies. 
+## Calculate Trajectory Characteristics
+Now we have all four datasets. The final step before analysis is to calculate trajectory characteristics.
 
-#### Summarizing data
+#### Calculate primary characteristics 
 First lets calculate primary characteristics with the move package and some secondary characteristics
 ```{r}
 #Project data with custom azimuthal equidistant projection
@@ -767,7 +785,7 @@ Lastly, I will summarize my data so that there is one observation of each variab
 7. **mean FPT**
 8. **Start Date**
 ```{r}
-#Displcement and mean fpt are already summarized. We will need total distance, average turning speed, average speed, time in days
+#Displacement and mean fpt are already summarized. We will need total distance, average turning speed, average speed, time in days
 
 #1-hour summary
 OSPR_1hour_summary<-OSPR_1hour_azim_DF %>% group_by(trackId) %>%
@@ -861,7 +879,7 @@ IndividualMetadata<-merge(Latitude, IndividualMetadata, by.x = "migrationEvent",
 
 #merge dataframe, keep only the needed columns, rename the columns, and remove unknown sexes and ages
 OSPR_1hour_summary<-merge(OSPR_1hour_summary, IndividualMetadata, by.x = "trackId", by.y = "migrationEvent")
-OSPR_1hour_summary<-OSPR_1hour_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
+OSPR_1hour_summary<-OSPR_1hour_summary[ ,c("trackId", "ID", "FirstDate", "Displacement", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "ID"] <- "Individual"
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "mean_turn_speed"] <- "turn_speed"
 names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "mean_absolute"] <- "abs_angle"
@@ -872,9 +890,10 @@ names(OSPR_1hour_summary) [names(OSPR_1hour_summary) == "max(location_lat)"] <- 
 OSPR_1hour_summary$duration<-as.numeric(OSPR_1hour_summary$duration)
 OSPR_1hour_summary<-filter(OSPR_1hour_summary, Sex != "Unkown") #124 migration events with 78 individuals
 OSPR_1hour_summary<-filter(OSPR_1hour_summary, Age != "Unkown")
+OSPR_1hour_summary<-filter(OSPR_1hour_summary, trackId != "Rodney.2014")
 
 OSPR_3hour_summary<-merge(OSPR_3hour_summary, IndividualMetadata, by.x = "trackId", by.y = "migrationEvent")
-OSPR_3hour_summary<-OSPR_3hour_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
+OSPR_3hour_summary<-OSPR_3hour_summary[ ,c("trackId", "ID", "FirstDate", "Displacement", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "ID"] <- "Individual"
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "mean_turn_speed"] <- "turn_speed"
 names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "mean_absolute"] <- "abs_angle"
@@ -885,9 +904,10 @@ names(OSPR_3hour_summary) [names(OSPR_3hour_summary) == "max(location_lat)"] <- 
 OSPR_3hour_summary$duration<-as.numeric(OSPR_3hour_summary$duration)
 OSPR_3hour_summary<-filter(OSPR_3hour_summary, Sex != "Unkown")
 OSPR_3hour_summary<-filter(OSPR_3hour_summary, Age != "Unkown")
+OSPR_3hour_summary<-filter(OSPR_1hour_summary, trackId != "Rodney.2014")
 
 OSPR_1day_summary<-merge(OSPR_1day_summary, IndividualMetadata, by.x = "trackId", by.y = "migrationEvent")
-OSPR_1day_summary<-OSPR_1day_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
+OSPR_1day_summary<-OSPR_1day_summary[ ,c("trackId", "ID", "FirstDate", "Displacement", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "ID"] <- "Individual"
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "mean_turn_speed"] <- "turn_speed"
 names(OSPR_1day_summary) [names(OSPR_1day_summary) == "mean_absolute"] <- "abs_angle"
@@ -898,9 +918,10 @@ names(OSPR_1day_summary) [names(OSPR_1day_summary) == "max(location_lat)"] <- "S
 OSPR_1day_summary$duration<-as.numeric(OSPR_1day_summary$duration)
 OSPR_1day_summary<-filter(OSPR_1day_summary, Sex != "Unkown")
 OSPR_1day_summary<-filter(OSPR_1day_summary, Age != "Unkown")
+OSPR_1day_summary<-filter(OSPR_1day_summary, trackId != "Rodney.2014")
 
 OSPR_3day_summary<-merge(OSPR_3day_summary, IndividualMetadata, by.x = "trackId", by.y = "migrationEvent")
-OSPR_3day_summary<-OSPR_3day_summary[ ,c("trackId", "ID", "FirstDate", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
+OSPR_3day_summary<-OSPR_3day_summary[ ,c("trackId", "ID", "FirstDate", "Displacement", "duration", "total_dist", "migrate_speed", "mean_turn_speed", "mean_absolute", "sinuosity", "fpt", "Multiple", "Study", "Migration Year", "Flyway", "Status", "Year Born", "Sex", "Age", "max(location_lat)")] 
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "ID"] <- "Individual"
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "mean_turn_speed"] <- "turn_speed"
 names(OSPR_3day_summary) [names(OSPR_3day_summary) == "mean_absolute"] <- "abs_angle"
@@ -911,6 +932,7 @@ names(OSPR_3day_summary) [names(OSPR_3day_summary) == "max(location_lat)"] <- "S
 OSPR_3day_summary$duration<-as.numeric(OSPR_3day_summary$duration)
 OSPR_3day_summary<-filter(OSPR_3day_summary, Sex != "Unkown")
 OSPR_3day_summary<-filter(OSPR_3day_summary, Age != "Unkown")
+OSPR_3day_summary<-filter(OSPR_3day_summary, trackId != "Rodney.2014")
 ```
 
 
@@ -1001,15 +1023,15 @@ Are osprey leap-frog migrants?
 ```{r}
 # 1-hour
 # Are osprey leap-frog migrants: do birds that migrate further, start further north?
-plot(OSPR_1hour_summary$total_dist, OSPR_1hour_summary$Start_Lat)
-summary(lm(total_dist ~ Start_Lat, data = OSPR_1hour_summary)) # Apparently not...
-plot(OSPR_3hour_summary$total_dist, OSPR_3hour_summary$Start_Lat)
-summary(lm(total_dist ~ Start_Lat, data = OSPR_3hour_summary)) #nope
-plot(OSPR_1day_summary$total_dist, OSPR_1day_summary$Start_Lat)
-summary(lm(total_dist ~ Start_Lat, data = OSPR_1day_summary)) #nope
-plot(OSPR_3day_summary$total_dist, OSPR_3day_summary$Start_Lat)
-summary(lm(total_dist ~ Start_Lat, data = OSPR_3day_summary)) #nope
-#osprey are not leap-frog migrants
+plot(OSPR_1hour_summary$Displacement, OSPR_1hour_summary$Start_Lat)
+summary(lm(Displacement ~ Start_Lat, data = OSPR_1hour_summary)) # Apparently not...
+plot(OSPR_3hour_summary$Displacement, OSPR_3hour_summary$Start_Lat)
+summary(lm(Displacement ~ Start_Lat, data = OSPR_3hour_summary)) #nope
+plot(OSPR_1day_summary$Displacement, OSPR_1day_summary$Start_Lat)
+summary(lm(Displacement ~ Start_Lat, data = OSPR_1day_summary)) #nope
+plot(OSPR_3day_summary$Displacement, OSPR_3day_summary$Start_Lat)
+summary(lm(Displacement ~ Start_Lat, data = OSPR_3day_summary)) #nope
+#osprey are not leap-frog migrants (I also ran it with total distance and got the same results)
 ```
 
 Do osprey exhibit differential migration between sexes where one sex migrates further than another?
@@ -1017,66 +1039,59 @@ Do osprey exhibit differential migration between sexes where one sex migrates fu
 #1-hour
 #Female osprey are known to migrate further than males: Is this true and does it influence the trends above?
 OSPR_1hour_summary_complete<-filter(OSPR_1hour_summary, Status !="Incomplete")
-ggplot(OSPR_1hour_summary_complete, aes(x=Start_Lat, y = total_dist, col = Sex)) +
+ggplot(OSPR_1hour_summary_complete, aes(x=Start_Lat, y = Displacement, col = Sex)) +
   geom_point()
-boxplot(total_dist~Sex, data = OSPR_1hour_summary_complete)
+boxplot(Displacement~Sex, data = OSPR_1hour_summary_complete)
 #check to make sure variances are homogeneous (assumption of the unpaired two way t-test).
 M_1hour<-subset(OSPR_1hour_summary_complete, Sex == "M")
 F_1hour<-subset(OSPR_1hour_summary_complete, Sex == "F")
 chart.Correlation(M_1hour[, 4:10], histogram=TRUE, pch=19, method = "spearman")
 chart.Correlation(F_1hour[, 4:10], histogram=TRUE, pch=19, method = "spearman")
-var.test(M_1hour$total_dist, F_1hour$total_dist) #p-value>0.05 by a lot. no siginficant differences between the variances. The distance data seems to be normally distributed from the corr plots above = we can run the t-test
-t.test(M_1hour$total_dist, F_1hour$total_dist, var.equal=TRUE) #significant p = 0.022.Total distance traveled by males is different from females. 
-mean(F_1hour$total_dist)
-mean(M_1hour$total_dist)
-#females travel further than males by an average of about 1000 kilometers. 
+var.test(M_1hour$Displacement, F_1hour$Displacement) #p-value>0.05 by a lot. no siginficant differences between the variances. The distance data seems to be normally distributed from the corr plots above = we can run the t-test
+t.test(M_1hour$Displacement, F_1hour$Displacement, var.equal=TRUE) #significant p = 0.0044.Total distance traveled by males is different from females. 
+#females travel further than males by an average of about 800 kilometers. 
 
 # 3-hours
 OSPR_3hour_summary_complete<-filter(OSPR_3hour_summary, Status !="Incomplete")
-ggplot(OSPR_3hour_summary_complete, aes(x=Start_Lat, y = total_dist, col = Sex)) +
+ggplot(OSPR_3hour_summary_complete, aes(x=Start_Lat, y = Displacement, col = Sex)) +
   geom_point()
-boxplot(total_dist~Sex, data = OSPR_3hour_summary_complete)
+boxplot(Displacement~Sex, data = OSPR_3hour_summary_complete)
 #check to make sure variances are homogeneous (assumption of the unpaired two way t-test).
 M_3hour<-subset(OSPR_3hour_summary_complete, Sex == "M")
 F_3hour<-subset(OSPR_3hour_summary_complete, Sex == "F")
 chart.Correlation(M_3hour[, 4:10], histogram=TRUE, pch=19, method = "spearman")
 chart.Correlation(F_3hour[, 4:10], histogram=TRUE, pch=19, method = "spearman")
-var.test(M_3hour$total_dist, F_3hour$total_dist) #p-value>0.05 by a lot. no siginficant differences between the variances. The distance data seems to be normally distributed from the corr plots above = we can run the t-test
-t.test(M_3hour$total_dist, F_3hour$total_dist, var.equal=TRUE) #significant p = 0.024.Total distance traveled by males is different from females. 
-mean(F_3hour$total_dist)
-mean(M_3hour$total_dist)
-#females travel further than males by an average of about 900 kilometers.
+var.test(M_3hour$Displacement, F_3hour$Displacement) #p-value>0.05 by a lot. no siginficant differences between the variances. The distance data seems to be normally distributed from the corr plots above = we can run the t-test
+t.test(M_3hour$Displacement, F_3hour$Displacement, var.equal=TRUE) #significant p = 0.0046.Total distance traveled by males is different from females. 
+#females travel further than males.
 
 # 1-day
 OSPR_1day_summary_complete<-filter(OSPR_1day_summary, Status !="Incomplete")
-ggplot(OSPR_1day_summary_complete, aes(x=Start_Lat, y = total_dist, col = Sex)) +
+ggplot(OSPR_1day_summary_complete, aes(x=Start_Lat, y = Displacement, col = Sex)) +
   geom_point()
-boxplot(total_dist~Sex, data = OSPR_1day_summary_complete)
+boxplot(Displacement~Sex, data = OSPR_1day_summary_complete)
 #check to make sure variances are homogeneous (assumption of the unpaired two way t-test).
 M_1day<-subset(OSPR_1day_summary_complete, Sex == "M")
 F_1day<-subset(OSPR_1day_summary_complete, Sex == "F")
 chart.Correlation(M_1day[, 4:10], histogram=TRUE, pch=19, method = "spearman")
 chart.Correlation(F_1day[, 4:10], histogram=TRUE, pch=19, method = "spearman")
-var.test(M_1day$total_dist, F_1day$total_dist) #p-value>0.05 by a lot. no siginficant differences between the variances. The distance data seems to be normally distributed, but less so than from the other two sampling periods from the corr plots above = we can run the t-test
-t.test(M_1day$total_dist, F_1day$total_dist, var.equal=TRUE) #significant p = 0.023.Total distance traveled by males is different from females. 
-mean(F_1day$total_dist)
-mean(M_1day$total_dist)
+var.test(M_1day$Displacement, F_1day$Displacement) #p-value>0.05 by a lot. no siginficant differences between the variances. The distance data seems to be normally distributed, but less so than from the other two sampling periods from the corr plots above = we can run the t-test
+t.test(M_1day$Displacement, F_1day$Displacement, var.equal=TRUE) #significant p = 0.0053.Total distance traveled by males is different from females. 
 #females travel further than males by an average of about 900 kilometers, although the actual distance traveled continues to decrease as the sampling frequency becomes courser
 
 # 3-day
 OSPR_3day_summary_complete<-filter(OSPR_3day_summary, Status !="Incomplete")
-ggplot(OSPR_3day_summary_complete, aes(x=Start_Lat, y = total_dist, col = Sex)) +
+ggplot(OSPR_3day_summary_complete, aes(x=Start_Lat, y = Displacement, col = Sex)) +
   geom_point()
-boxplot(total_dist~Sex, data = OSPR_3day_summary_complete)
+boxplot(Displacement~Sex, data = OSPR_3day_summary_complete)
 #check to make sure variances are homogeneous (assumption of the unpaired two way t-test).
 M_3day<-subset(OSPR_3day_summary_complete, Sex == "M")
 F_3day<-subset(OSPR_3day_summary_complete, Sex == "F")
 chart.Correlation(M_3day[, 4:10], histogram=TRUE, pch=19, method = "spearman")
 chart.Correlation(F_3day[, 4:10], histogram=TRUE, pch=19, method = "spearman")
-var.test(M_3day$total_dist, F_3day$total_dist) #p-value>0.05 by a lot, however the heteroscedasticity is becoming more apparent = the variances between the two data sets are becoming more different, yet there are still no significant differences between the variances. The distance data seems to be normally distributed, but less so than from the other two sampling periods from the corr plots above = we can run the t-test
-t.test(M_3day$total_dist, F_3day$total_dist, var.equal=TRUE) #significant p = 0.022.Total distance traveled by males is different from females. 
-mean(F_3day$total_dist)
-mean(M_3day$total_dist)
+var.test(M_3day$Displacement, F_3day$Displacement) #p-value>0.05 by a lot, however the heteroscedasticity is becoming more apparent = the variances between the two data sets are becoming more different, yet there are still no significant differences between the variances. The distance data seems to be normally distributed, but less so than from the other two sampling periods from the corr plots above = we can run the t-test
+t.test(M_3day$Displacement, F_3day$Displacement, var.equal=TRUE) #significant p = 0.0061.Total distance traveled by males is different from females. 
+
 
 #conclusions: Females travel further on average than males when they start at latitudes below 40 or above 45. Females seem to travel similar distances to males when they start mid-latitude
 ```
@@ -1084,234 +1099,374 @@ mean(M_3day$total_dist)
 Do osprey exhibit differential migration between age groups where one age group migrates further than another or has a more sinuous flight path?
 ```{r}
 #1-hour
-ggplot(OSPR_1hour_summary_complete, aes(x=Start_Lat, y = total_dist, col = Age)) +
+ggplot(OSPR_1hour_summary_complete, aes(x=Start_Lat, y = Displacement, col = Age)) +
   geom_point()
-boxplot(total_dist~Age, data = OSPR_1hour_summary_complete)
+boxplot(Displacement~Age, data = OSPR_1hour_summary_complete)
 J_1hour<-subset(OSPR_3hour_summary_complete, Age == "Juvenile")
 A_1hour<-subset(OSPR_3hour_summary_complete, Age == "Adult")
 chart.Correlation(J_1hour[, 4:10], histogram=TRUE, pch=19, method = "spearman")
 chart.Correlation(A_1hour[, 4:10], histogram=TRUE, pch=19, method = "spearman")
-var.test(J_1hour$total_dist, A_1hour$total_dist) #no difference
-t.test(J_1hour$total_dist, A_1hour$total_dist, var.equal=TRUE) #There is a significant difference (birds at higher latitudes where juveniles will fly less distance than adults)
+var.test(J_1hour$Displacement, A_1hour$Displacement) #no difference
+t.test(J_1hour$Displacement, A_1hour$Displacement, var.equal=TRUE) #There is a significant difference, p = 0.009 (birds at higher latitudes where juveniles will fly less distance than adults)
 
 #3-hour
-ggplot(OSPR_3hour_summary_complete, aes(x=Start_Lat, y = total_dist, col = Age)) +
+ggplot(OSPR_3hour_summary_complete, aes(x=Start_Lat, y = Displacement, col = Age)) +
   geom_point()
-boxplot(total_dist~Age, data = OSPR_3hour_summary_complete)
+boxplot(Displacement~Age, data = OSPR_3hour_summary_complete)
 J_3hour<-subset(OSPR_3hour_summary_complete, Age == "Juvenile")
 A_3hour<-subset(OSPR_3hour_summary_complete, Age == "Adult")
 chart.Correlation(J_3hour[, 4:10], histogram=TRUE, pch=19, method = "spearman")
 chart.Correlation(A_3hour[, 4:10], histogram=TRUE, pch=19, method = "spearman")
-var.test(J_3hour$total_dist, A_3hour$total_dist) #no difference
-t.test(J_3hour$total_dist, A_3hour$total_dist, var.equal=TRUE) #There is a significant difference (birds at higher latitudes where juveniles will fly less distance than adults)
+var.test(J_3hour$Displacement, A_3hour$Displacement) #no difference
+t.test(J_3hour$Displacement, A_3hour$Displacement, var.equal=TRUE) #There is a significant difference (birds at higher latitudes where juveniles will fly less distance than adults)
 
 #1-day
-ggplot(OSPR_1day_summary_complete, aes(x=Start_Lat, y = total_dist, col = Age)) +
+ggplot(OSPR_1day_summary_complete, aes(x=Start_Lat, y = Displacement, col = Age)) +
   geom_point()
-boxplot(total_dist~Age, data = OSPR_1day_summary_complete)
+boxplot(Displacement~Age, data = OSPR_1day_summary_complete)
 J_1day<-subset(OSPR_1day_summary_complete, Age == "Juvenile")
 A_1day<-subset(OSPR_1day_summary_complete, Age == "Adult")
 chart.Correlation(J_1day[, 4:10], histogram=TRUE, pch=19, method = "spearman")
 chart.Correlation(A_1day[, 4:10], histogram=TRUE, pch=19, method = "spearman")
-var.test(J_1day$total_dist, A_1day$total_dist) #no difference
-t.test(J_1day$total_dist, A_1day$total_dist, var.equal=TRUE) #There is a significant difference (birds at higher latitudes where juveniles will fly less distance than adults)
+var.test(J_1day$Displacement, A_1day$Displacement) #no difference
+t.test(J_1day$Displacement, A_1day$Displacement, var.equal=TRUE) #There is a significant difference p = 0.02 (birds at higher latitudes where juveniles will fly less distance than adults)
 
 #3-day
-ggplot(OSPR_3day_summary_complete, aes(x=Start_Lat, y = total_dist, col = Age)) +
+ggplot(OSPR_3day_summary_complete, aes(x=Start_Lat, y = Displacement, col = Age)) +
   geom_point()
-boxplot(total_dist~Age, data = OSPR_3day_summary_complete)
+boxplot(Displacement~Age, data = OSPR_3day_summary_complete)
 J_3day<-subset(OSPR_3day_summary_complete, Age == "Juvenile")
 A_3day<-subset(OSPR_3day_summary_complete, Age == "Adult")
 chart.Correlation(J_3day[, 4:10], histogram=TRUE, pch=19, method = "spearman")
 chart.Correlation(A_3day[, 4:10], histogram=TRUE, pch=19, method = "spearman")
-var.test(J_3day$total_dist, A_3day$total_dist) #no difference
-t.test(J_3day$total_dist, A_3day$total_dist, var.equal=TRUE) #significant difference
+var.test(J_3day$Displacement, A_3day$Displacement) #no difference
+t.test(J_3day$Displacement, A_3day$Displacement, var.equal=TRUE) #significant difference p = 0.021.
 
-#Conclusion: I saw a significant difference between the distance traveled by juveniles compared to adults. Juveniles supposedly traveled less distance than adults, however I do not think these results reflect the biology of osprey. All male osprey starting at higher latitudes (where differentiation between sexes occurs) were juvenile while all females were adults. This means that my data actually reflects sexual differentiation rather than age. When looking at lower and mid latitudes, juveniles were evenly mixed with adults. Finally, my p-values for distance ~ age were similar suggesting that sex may have skewed my results.
+#Conclusion: I saw a significant difference between the total distance traveled by juveniles compared to adults. Juveniles supposedly traveled less distance than adults, however I do not think these results reflect the biology of osprey. All male osprey starting at higher latitudes (where differentiation between sexes occurs) were juvenile while all females were adults. This means that my data actually reflects sexual differentiation rather than age. When looking at lower and mid latitudes, juveniles were evenly mixed with adults. Finally, my p-values for distance ~ age were similar suggesting that sex may have skewed my results.
 #The actual influence of sex, age, and latitude on distance is still unknown without a larger sample size of both adult and juvenile females from various latitudes. 
+
+#Conclusions: Similar conclusions with displacement except that the p-values for differences between sex were smaller while the p-values between age were larger suggesting that sex may be more influencial...
 ```
 
-Migration strategies should be impacted by the distance the bird flies, the sex, and the age of the bird. I do not have enough data on origin of the birds to make any conclusions. 
-```{r}
-#Hypothesis: Females and males will exhibit different migration strategies since females travel around 1000 kilometers more on average than males.
-#migration strategy will not include distance as a characteristic anymore as distance is thought to influence strategy. It is now an independent variable. 
+I predict migration strategies should be impacted by the distance the bird flies, the sex, and the age of the bird. However, I do not have enough data on origin of the birds to make any conclusions and the sexes and age data is very skewed. Instead of attempting to determine the relationship between groups, I can use HCA to determine the relationship between individuals and use a heat map to compare the differences in demographics, geographic origin, and migratory characteristics to get a better idea of how osprey with more similar strategies relate to one another.  
 
-#hmmmm not seeing much correlation here between latitude and total distance but sex does seem to be an influence. Lets add some more variables including sex, age, latitude, Birth_Year, Flyway, Migration_Year, and Origin
-
-OSPR_1hour_summary_filter<-filter(OSPR_1hour_summary, Sex != "Unkown") #139 migration events
-OSPR_1hour_summary_filter<-filter(OSPR_1hour_summary_filter, Age != "Unkown")
-Anova(lm(total_dist~Start_Lat + Sex + Age + Birth_Year + Flyway + Migration_Year + Origin, data = OSPR_1hour_summary_Sex)) #migration year, age, and sex seem to be the influencing factors. 
-
-#But what about the relationship between these independent variables and the fact that my data is non-normally distributed? What is the relationship of my variables with the rest of the dependent variables? We need a multivariate non-parametric test to answer:
-  # 1. Which independent variables show distinct strategies for each level?
-    # * Does strategy differ between age, sex, flyway, starting Latitude, origin, or Migration_Year, or
-        # Birth_Year?
-  # 2. Which characteristics contribute to differences between groups?
-
-
-
-
-dis_1hour <- vegdist(OSPR_1hour_summary_filter[,4:10])
-mod <- betadisper(dis_1hour, OSP1hrSum$k_3, type = "centroid")
-anova(mod) #does not meet assumptions and design is unbalanced
-plot(mod) #largest group has the most dispersion = PERMANOVA test will be overly conservative
-adonis2(dis_1hour ~ OSP1hrSum$k_3, method = "euclidean") #we still see a significant result so the groups differ in location as well as dispersion. 
-TukeyHSD(mod) #no diff between class 1 and 2, but differences between 1 and 3 and 2 and 3. 2 may be the optimum number of clusters
-```
-
-
-```{r}
-# 3-hour
-dis_3hour <- vegdist(OSP3hrSum[,1:7])
-mod2 <- betadisper(dis_3hour, OSP3hrSum$k_2, type = "centroid")
-anova(mod2) #meets assumptions. Variances are equally distributed
-plot(mod2) #visually they don't look that different
-adonis2(dis_1hour ~ OSP3hrSum$k_2, method = "euclidean") #No difference between the groups
-```
-
-```{r}
-# 1-Day
-```
-
-```{r}
-# 3-Day
-```
-
-
-#### Hiearchical Clustering Analysis
+#### HCA
 ```{r}
 # 1-hour
-
-#linkage methods
+#normalize data for HCA using z scores since our data is skewed
+OSPR_1hour_norm<-lapply(OSPR_1hour_summary[,5:11], scale)
+OSPR_1hour_norm<-cbind(OSPR_1hour_norm, OSPR_1hour_summary[,c(1:4, 12:19)])
+#determine the best linake method
 m <- c( "average", "single", "complete", "ward")
 names(m) <- c( "average", "single", "complete", "ward")
 ac <- function(x) {
-  agnes(OSPR_1hour_norm, method = x)$ac
+  agnes(OSPR_1hour_norm[,1:7], method = x)$ac
 }
-sapply(m, ac) #ward is best for identifying strongest clustering structure.
+sapply(m, ac) #ward is best for identifying strongest clustering structure
 
 #optimal clusters
-NbClust(OSPR_1hour_norm, method = "ward.D2", index = "all")$Best.nc # 3 clusters
+NbClust(OSPR_1hour_norm[,1:7], method = "ward.D2", index = "all")$Best.nc # 2 clusters
 
-#create a new osprey summary object and assign color schemes the arrange
-OSP1hrSum<-OSPR_1hour_summary
-OSP1hrSum<-cbind(OSPR_1hour_norm, OSP1hrSum[,c(1:3, 11:19)])
-OSPR_1hour_clust <- OSP1hrSum[,1:7] %>% dist %>% hclust(method = "ward.D2") %>% as.dendrogram 
-k_3 <- cutree(OSPR_1hour_clust, k = 3, order_clusters_as_data = TRUE)
-OSP1hrSum<-cbind(OSP1hrSum, k_3)
-oldvals3 <- unique(OSP1hrSum$k_3)
-newvals3 <- c("#33D1DE", "#2C2AAF", "#6FB568")
-OSP1hrSum$ClassColors<-newvals3[ match(OSP1hrSum$k_3, oldvals3) ]
-oldvals <- unique(OSP1hrSum$Flyway)
-newvals <- c("#33D1DE", "#2C2AAF", "#6FB568")
-oldvals2 <- unique(OSP1hrSum$Sex)
-newvals2 <- c("Blue", "Red", "Gray")
-OSP1hrSum$FlywayColors<-newvals[ match(OSP1hrSum$Flyway, oldvals) ]
-OSP1hrSum$SexColors<-newvals2[ match(OSP1hrSum$Sex, oldvals2) ]
-OSP1hrSum<-OSP1hrSum %>% arrange(k_3) #rearrange so labels are correct on dendrogram
-
+#Create dendrogram and clusters
+OSPR_1hour_clust <- OSPR_1hour_norm[,1:7] %>% dist %>% hclust(method = "ward.D2") %>% as.dendrogram
+labels(OSPR_1hour_clust) <- paste(as.character(OSPR_1hour_norm[,8])[order.dendrogram(OSPR_1hour_clust)])
+SexColors<-c(M = "Blue", F = "Red")
+labels_colors(OSPR_1hour_clust) <-
+   SexColors[sort_levels_values(
+      as.numeric(OSPR_1hour_norm[,18])[order.dendrogram(OSPR_1hour_clust)]
+   )]
+OSPR_1hour_clust<-color_branches(OSPR_1hour_clust, k = 2, col = c("#FF0000", "#E462C7"))
 OSPR_1hour_clust %>%
-  set("branches_k_color", k = 3, value = c("#FF0000", "#E462C7", "#F5D000")) %>%
-  set("labels", OSP1hrSum$trackId) %>% #set labels
   set("labels_cex", 0.3) %>%        # change label size
-  set("labels_col", c(OSP1hrSum$FlywayColors)) %>% #change label color
   plot()
+
+#Create a heatmap
+OSPR_1hour_clust <- OSPR_1hour_norm[,1:7] %>% dist %>% hclust(method = "ward.D2") %>% as.dendrogram %>% ladderize
+labels(OSPR_1hour_clust) <- paste(as.character(OSPR_1hour_norm[,8])
+                                  [order.dendrogram(OSPR_1hour_clust)])
+OSPR_1hour_clust<-color_branches(OSPR_1hour_clust, k = 2, col = c("#FF0000", "#E462C7"))
+
+#make a color palette
+col1<-colorRampPalette(colors = c("#593CD8", "#AA4499"), space = "Lab")(20)
+col2<-colorRampPalette(colors = c("#CC6677", "#EFD347"), space = "Lab")(40)
+rampcols <- c(col1, col2)
+
+#Reorder the data set for labeling
+target<-as.data.frame(labels(OSPR_1hour_clust))
+OSPR_1hour_norm<-OSPR_1hour_norm[ order(match(OSPR_1hour_norm$trackId, 
+                             target$`labels(OSPR_1hour_clust)`)), ]
+row_dend = dendsort(OSPR_1hour_clust)
+annotation<-rowAnnotation(df = OSPR_1hour_norm[,13:19])
+
+#row_labels = OSPR_1hour_norm$trackId,
+?Heatmap
+Heatmap(as.matrix(OSPR_1hour_norm[,1:7]),
+        col = rampcols,
+        cluster_columns = F,
+        name = "Scaled",
+        column_title = "Migration Characteristics",
+        column_title_side = "bottom",
+        column_labels = c("Duration", "Total Distance", "Migration Speed", 
+                          "Turn Speed","Turn Angle", "Sinuosity", 
+                          "First Passage Time"),
+        column_names_gp = gpar(fontsize = 8),
+        column_names_rot = 45,
+        cluster_rows = row_dend,
+        row_title = "Migration Events",
+        show_row_names = F,
+        row_names_gp = gpar(fontsize = 2),
+        row_dend_width = unit(3, "cm"),
+        row_split = 3,
+        border = TRUE
+        )
+
 ```
 
 ```{r}
 # 3-hour
-
-#linkage method
+OSPR_3hour_norm<-lapply(OSPR_3hour_summary[,5:11], scale)
+OSPR_3hour_norm<-cbind(OSPR_3hour_norm, OSPR_3hour_summary[,c(1:4, 12:19)])
+#determine the best linake method
 m <- c( "average", "single", "complete", "ward")
 names(m) <- c( "average", "single", "complete", "ward")
 ac <- function(x) {
-  agnes(OSPR_3hour_norm, method = x)$ac
+  agnes(OSPR_3hour_norm[,1:7], method = x)$ac
 }
-sapply(m, ac) #ward
+sapply(m, ac) #ward is best for identifying strongest clustering structure
+NbClust(OSPR_3hour_norm[,1:7], method = "ward.D2", index = "all")$Best.nc # 2 clusters
 
-OSPR_3hour_clust<-hclust(dist(OSPR_3hour_norm), method = "ward.D2")
-
-#optimal clusters
-NbClust(OSPR_3hour_norm, method = "ward.D2", index = "all")$Best.nc # 2 clusters
-
-OSP3hrSum<-OSPR_3hour_summary
-OSP3hrSum<-cbind(OSPR_3hour_norm, OSP3hrSum[,c(1:3, 11:19)])
-OSPR_3hour_clust <- OSP3hrSum[,1:7] %>% dist %>% hclust(method = "ward.D2") %>% as.dendrogram 
-k_2 <- cutree(OSPR_3hour_clust, k = 2, order_clusters_as_data = TRUE)
-OSP3hrSum<-cbind(OSP3hrSum, k_2)
-oldvals3 <- unique(OSP3hrSum$k_2)
-newvals3 <- c("#33D1DE", "#2C2AAF")
-OSP3hrSum$ClassColors<-newvals3[ match(OSP3hrSum$k_2, oldvals3) ]
-oldvals <- unique(OSP3hrSum$Flyway)
-newvals <- c("#33D1DE", "#2C2AAF", "#6FB568")
-oldvals2 <- unique(OSP3hrSum$Sex)
-newvals2 <- c("Blue", "Red", "Gray")
-OSP3hrSum$FlywayColors<-newvals[ match(OSP3hrSum$Flyway, oldvals) ]
-OSP3hrSum$SexColors<-newvals2[ match(OSP3hrSum$Sex, oldvals2) ]
-OSP3hrSum<-OSP1hrSum %>% arrange(k_3) #rearrange so labels are correct on dendrogram
-
+#Create dendrogram and clusters
+OSPR_3hour_clust <- OSPR_3hour_norm[,1:7] %>% dist %>% hclust(method = "ward.D2") %>% as.dendrogram
+labels(OSPR_3hour_clust) <- paste(as.character(OSPR_3hour_norm[,8])[order.dendrogram(OSPR_3hour_clust)])
+SexColors<-c(M = "Blue", F = "Red")
+labels_colors(OSPR_3hour_clust) <-
+   SexColors[sort_levels_values(
+      as.numeric(OSPR_3hour_norm[,18])[order.dendrogram(OSPR_3hour_clust)]
+   )]
+OSPR_3hour_clust<-color_branches(OSPR_3hour_clust, k = 2, col = c("#FF0000", "#E462C7"))
 OSPR_3hour_clust %>%
-  set("branches_k_color", k = 2, value = c("#FF0000", "#E462C7")) %>%
-  set("labels", OSP3hrSum$trackId) %>% #set labels
   set("labels_cex", 0.3) %>%        # change label size
-  set("labels_col", c(OSP3hrSum$FlywayColors)) %>% #change label color
   plot()
 
+#Create a heatmap
+OSPR_3hour_clust <- OSPR_3hour_norm[,1:7] %>% dist %>% hclust(method = "ward.D2") %>% as.dendrogram %>% ladderize
+labels(OSPR_3hour_clust) <- paste(as.character(OSPR_3hour_norm[,8])
+                                  [order.dendrogram(OSPR_3hour_clust)])
+OSPR_3hour_clust<-color_branches(OSPR_3hour_clust, k = 2, col = c("#FF0000", "#E462C7"))
 
-dl <- dendlist(OSPR_1hour_clust, OSPR_3hour_clust)
-?tanglegram
-tanglegram(dl, sort = TRUE, common_subtrees_color_lines = T, highlight_distinct_edges  = FALSE, highlight_branches_lwd = FALSE, main_left = "1-hour", main_right = "3-hour", margin_inner = 0.5)
+#Reorder the data set for labeling
+target<-as.data.frame(labels(OSPR_3hour_clust))
+OSPR_3hour_norm<-OSPR_3hour_norm[ order(match(OSPR_3hour_norm$trackId, 
+                             target$`labels(OSPR_3hour_clust)`)), ]
+row_dend = dendsort(OSPR_3hour_clust)
+annotation<-rowAnnotation(df = OSPR_3hour_norm[,13:19])
+
+Heatmap(as.matrix(OSPR_3hour_norm[,1:7]),
+        col = rampcols,
+        cluster_columns = F,
+        name = "Scaled",
+        column_title = "Migration Characteristics",
+        column_title_side = "bottom",
+        column_labels = c("Duration", "Total Distance", "Migration Speed", 
+                          "Turn Speed","Turn Angle", "Sinuosity", 
+                          "First Passage Time"),
+        column_names_gp = gpar(fontsize = 8),
+        column_names_rot = 90,
+        cluster_rows = row_dend,
+        row_labels = OSPR_3hour_norm$trackId,
+        row_title = "Migration Events",
+        row_names_gp = gpar(fontsize = 2),
+        row_dend_width = unit(3, "cm"),
+        row_split = 3,
+        border = TRUE
+        )
+
 ```
 
 ```{r}
-# 1-Day
-
-#linkage method
+# 3-hour
+OSPR_1day_norm<-lapply(OSPR_1day_summary[,5:11], scale)
+OSPR_1day_norm<-cbind(OSPR_1day_norm, OSPR_1day_summary[,c(1:4, 12:19)])
+#determine the best linake method
 m <- c( "average", "single", "complete", "ward")
 names(m) <- c( "average", "single", "complete", "ward")
 ac <- function(x) {
-  agnes(OSPR_1day_norm, method = x)$ac
+  agnes(OSPR_1day_norm[,1:7], method = x)$ac
 }
-sapply(m, ac) #ward
+sapply(m, ac) #ward is best for identifying strongest clustering structure
+NbClust(OSPR_1day_norm[,1:7], method = "ward.D2", index = "all")$Best.nc # 2 clusters
 
-OSPR_1day_clust<-hclust(dist(OSPR_1day_norm), method = "ward.D2")
+#Create dendrogram and clusters
+OSPR_1day_clust <- OSPR_1day_norm[,1:7] %>% dist %>% hclust(method = "ward.D2") %>% as.dendrogram
+labels(OSPR_1day_clust) <- paste(as.character(OSPR_1day_norm[,8])[order.dendrogram(OSPR_1day_clust)])
+SexColors<-c(M = "Blue", F = "Red")
+labels_colors(OSPR_1day_clust) <-
+   SexColors[sort_levels_values(
+      as.numeric(OSPR_1day_norm[,18])[order.dendrogram(OSPR_1day_clust)]
+   )]
+OSPR_1day_clust<-color_branches(OSPR_1day_clust, k = 2, col = c("#FF0000", "#E462C7"))
+OSPR_1day_clust %>%
+  set("labels_cex", 0.3) %>%      
+  plot()
 
-#optimal clusters
-NbClust(OSPR_1day_norm, method = "ward.D2", index = "all")$Best.nc # 3 clusters
+#Create a heatmap
+OSPR_1day_clust <- OSPR_1day_norm[,1:7] %>% dist %>% hclust(method = "ward.D2") %>% as.dendrogram %>% ladderize
+labels(OSPR_1day_clust) <- paste(as.character(OSPR_1day_norm[,8])
+                                  [order.dendrogram(OSPR_1day_clust)])
+OSPR_1day_clust<-color_branches(OSPR_1day_clust, k = 2, col = c("#FF0000", "#E462C7"))
 
-fviz_dend(x = OSPR_1day_clust, lwd = 0.8, k = 3,
-          show_labels = F,
-          k_colors = c("#117733", "#DDCC77", "#CC6677"),
-          rect = TRUE, 
-          rect_border = c("#117733", "#DDCC77", "#CC6677"), 
-          rect_fill = T,
-          horiz = T)
+#Reorder the data set for labeling
+target<-as.data.frame(labels(OSPR_1day_clust))
+OSPR_1day_norm<-OSPR_1day_norm[ order(match(OSPR_1day_norm$trackId, 
+                             target$`labels(OSPR_1day_clust)`)), ]
+row_dend = dendsort(OSPR_1day_clust)
+annotation<-rowAnnotation(df = OSPR_1day_norm[,13:19])
+
+Heatmap(as.matrix(OSPR_1day_norm[,1:7]),
+        col = rampcols,
+        cluster_columns = F,
+        name = "Scaled",
+        column_title = "Migration Characteristics",
+        column_title_side = "bottom",
+        column_labels = c("Duration", "Total Distance", "Migration Speed", 
+                          "Turn Speed","Turn Angle", "Sinuosity", 
+                          "First Passage Time"),
+        column_names_gp = gpar(fontsize = 8),
+        column_names_rot = 90,
+        cluster_rows = row_dend,
+        row_labels = OSPR_1day_norm$trackId,
+        row_title = "Migration Events",
+        row_names_gp = gpar(fontsize = 2),
+        row_dend_width = unit(3, "cm"),
+        row_split = 3,
+        border = TRUE
+        )
+
 ```
 
 ```{r}
-# 3-Day
-
-#linkage method
+# 3-hour
+OSPR_3day_norm<-lapply(OSPR_3day_summary[,5:11], scale)
+OSPR_3day_norm<-cbind(OSPR_3day_norm, OSPR_3day_summary[,c(1:4, 12:19)])
+#determine the best linake method
 m <- c( "average", "single", "complete", "ward")
 names(m) <- c( "average", "single", "complete", "ward")
 ac <- function(x) {
-  agnes(OSPR_3day_norm, method = x)$ac
+  agnes(OSPR_3day_norm[,1:7], method = x)$ac
 }
-sapply(m, ac) #ward
+sapply(m, ac) #ward is best for identifying strongest clustering structure
+NbClust(OSPR_3day_norm[,1:7], method = "ward.D2", index = "all")$Best.nc # 6 clusters
 
-OSPR_3day_clust<-hclust(dist(OSPR_3day_norm), method = "ward.D2")
+#Create dendrogram and clusters
+OSPR_3day_clust <- OSPR_3day_norm[,1:7] %>% dist %>% hclust(method = "ward.D2") %>% as.dendrogram
+labels(OSPR_3day_clust) <- paste(as.character(OSPR_3day_norm[,8])[order.dendrogram(OSPR_3day_clust)])
+SexColors<-c(M = "Blue", F = "Red")
+labels_colors(OSPR_3day_clust) <-
+   SexColors[sort_levels_values(
+      as.numeric(OSPR_3day_norm[,18])[order.dendrogram(OSPR_3day_clust)]
+   )]
+OSPR_3day_clust<-color_branches(OSPR_3day_clust, k = 6, col = c("#593CD8", "#117733", "#EFD347", "#FF0000", "#E462C7"))
+OSPR_3day_clust %>%
+  set("labels_cex", 0.3) %>%      
+  plot()
 
-NbClust(OSPR_3day_norm, method = "ward.D2", index = "all")$Best.nc # 3 clusters
+#Create a heatmap
+OSPR_3day_clust <- OSPR_3day_norm[,1:7] %>% dist %>% hclust(method = "ward.D2") %>% as.dendrogram %>% ladderize
+labels(OSPR_3day_clust) <- paste(as.character(OSPR_3day_norm[,8])
+                                  [order.dendrogram(OSPR_3day_clust)])
+OSPR_1day_clust<-color_branches(OSPR_3day_clust, k = 6, col = c("#593CD8", "#117733", "#EFD347", "#FF0000", "#E462C7"))
 
-fviz_dend(x = OSPR_3day_clust, lwd = 0.8, k = 3,
-          show_labels = F,
-          k_colors = c("#117733", "#DDCC77", "#CC6677"),
-          rect = TRUE, 
-          rect_border = c("#117733", "#DDCC77", "#CC6677"), 
-          rect_fill = T,
-          horiz = T)
+#Reorder the data set for labeling
+target<-as.data.frame(labels(OSPR_3day_clust))
+OSPR_3day_norm<-OSPR_1day_norm[ order(match(OSPR_3day_norm$trackId, 
+                             target$`labels(OSPR_3day_clust)`)), ]
+row_dend = dendsort(OSPR_3day_clust)
+annotation<-rowAnnotation(df = OSPR_3day_norm[,13:19])
+
+Heatmap(as.matrix(OSPR_3day_norm[,1:7]),
+        col = rampcols,
+        cluster_columns = F,
+        name = "Scaled",
+        column_title = "Migration Characteristics",
+        column_title_side = "bottom",
+        column_labels = c("Duration", "Total Distance", "Migration Speed", 
+                          "Turn Speed","Turn Angle", "Sinuosity", 
+                          "First Passage Time"),
+        column_names_gp = gpar(fontsize = 8),
+        column_names_rot = 90,
+        cluster_rows = row_dend,
+        row_labels = OSPR_3day_norm$trackId,
+        row_title = "Migration Events",
+        row_names_gp = gpar(fontsize = 2),
+        row_dend_width = unit(3, "cm"),
+        row_split = 3,
+        border = TRUE
+        )
+
 ```
 
+#### PERMANOVA
+```{r}
+#add cluster labels to data 
+cut_avg_1hour <- cutree(OSPR_1hour_clust, k = 2)
+OSPR_1hour_norm<-mutate(OSPR_1hour_norm, cluster = cut_avg_1hour)
+
+#test assumptions for PERMANOVA
+dis_1hour <- vegdist(OSPR_1hour_norm[,1:7], method = "euclidean")
+mod <- betadisper(dis_1hour, OSPR_1hour_norm$cluster, type = "centroid")
+anova(mod) #does not meet assumptions and design is unbalanced. Dispersions are signficantly different
+plot(mod) #largest group has the most dispersion = PERMANOVA test will be overly conservative
+adonis2(dis_1hour ~ OSPR_1hour_norm$cluster, method = "euclidean") #we still see a significant result so the two groups are different. 
+
+OSPR_1hour_summary<-mutate(OSPR_1hour_summary, cluster = cut_avg_1hour)
+clus1_1hour<-filter(OSPR_1hour_summary, cluster == 1)
+clus1_mean<-lapply(clus1_1hour[,5:11], mean)
+
+clus2_1hour<-filter(OSPR_1hour_summary, cluster == 2)
+clus2_mean<-lapply(clus2_1hour[,5:11], mean)
+cluster_mean<-rbind(clus1_mean, clus2_mean)
+
+boxplot(OSPR_1hour_summary$cluster, OSPR_1hour_summary$duration)
+```
+
+```{r}
+#add cluster labels to data 
+cut_avg_3hour <- cutree(OSPR_3hour_clust, k = 2)
+OSPR_3hour_norm<-mutate(OSPR_3hour_norm, cluster = cut_avg_3hour)
+
+#test assumptions for PERMANOVA
+dis_3hour <- vegdist(OSPR_3hour_norm[,1:7], method = "euclidean")
+mod <- betadisper(dis_3hour, OSPR_3hour_norm$cluster, type = "centroid")
+anova(mod) #Meets the assumptions
+plot(mod) #largest group has the most dispersion = PERMANOVA test will be overly conservative
+adonis2(dis_3hour ~ OSPR_3hour_norm$cluster, method = "euclidean") #The groups are not different
+```
+
+```{r}
+#add cluster labels to data 
+cut_avg_1day <- cutree(OSPR_1day_clust, k = 2)
+OSPR_1day_norm<-mutate(OSPR_1day_norm, cluster = cut_avg_1day)
+
+#test assumptions for PERMANOVA
+dis_1day <- vegdist(OSPR_1day_norm[,1:7], method = "euclidean")
+mod <- betadisper(dis_1day, OSPR_1day_norm$cluster, type = "centroid")
+anova(mod) #Meets the assumptions
+plot(mod) #largest group has the most dispersion = PERMANOVA test will be overly conservative
+adonis2(dis_1day ~ OSPR_1day_norm$cluster, method = "euclidean") #The groups are not different
+```
+
+```{r}
+#add cluster labels to data 
+cut_avg_3day <- cutree(OSPR_3day_clust, k = 6)
+OSPR_3day_norm<-mutate(OSPR_3day_norm, cluster = cut_avg_3day)
+
+#test assumptions for PERMANOVA
+dis_3day <- vegdist(OSPR_3day_norm[,1:7], method = "euclidean")
+mod <- betadisper(dis_3day, OSPR_3day_norm$cluster, type = "centroid")
+anova(mod) #Does not meet assumptions
+plot(mod) #largest group has the most dispersion = PERMANOVA test will be overly conservative
+adonis2(dis_3day ~ OSPR_3day_norm$cluster, method = "euclidean") #The groups are not different
+```
 
 
 ## References
