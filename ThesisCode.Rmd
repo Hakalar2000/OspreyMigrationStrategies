@@ -505,7 +505,7 @@ plot(OSPR_3day[[1]])
 Now we have all four datasets. The final step before analysis is to calculate trajectory characteristics.
 
 #### Calculate primary characteristics 
-First lets calculate primary characteristics with the move package and some secondary characteristics
+First lets calculate primary characteristics with the move package and some secondary characteristics. Keep in mind that distance measurements need to be calculated using the custom azimuthal projection while angle measurements need to be calculated using a mercator projection. 
 ```{r}
 #Project data with custom azimuthal equidistant projection
 OSPR_1hour_azim <- spTransform(OSPR_1hour, CRSobj=azim_orign)
@@ -562,6 +562,8 @@ OSPR_1day_azim$lag<-unlist(lapply(timeLag(OSPR_1day_azim,
 OSPR_3day_azim$lag<-unlist(lapply(timeLag(OSPR_3day_azim, 
                                            units = "hours"), c, NA))
 ```
+
+#### Calculate secondary characteristics
 
 Next I will transform my move objects into data frames and extract the characteristics plus coordinate and migration Event information. I will append the angular info from the Mercator projected data frames to the azimuthal dataframes then calculate angular velocity. 
 ```{r}
@@ -775,7 +777,8 @@ names(fpt_3day) [names(fpt_3day) == "X0.00223418578042695"] <- "fpt"
 names(fpt_3day) [names(fpt_3day) == "id(OSPR_3day_traj)"] <- "trackId"
 ```
 
-Lastly, I will summarize my data so that there is one observation of each variable per individual. I should have the following numeric variables for each time frame:
+#### Summarize data
+Lastly, I will summarize my data so that there is one observation of each variable per individual. This is needed for the Hierarchical Clustering Analysis. I should have the following numeric variables for each time frame:
 1. **Time of migration (days)**
 2. **Sinuosity**
 3. **Total Distance (in km)**
@@ -856,7 +859,7 @@ OSPR_3day_summary$sinuosity<-
 OSPR_3day_summary<-merge(OSPR_3day_summary, fpt_3day, by = "trackId")
 ```
 
-Then I will add independent variables
+Then I will add independent variables using the individual metadata file I created. 
 1. **Sex**
 2. **Age**
 3. **Migration Flyway**
@@ -935,10 +938,11 @@ OSPR_3day_summary<-filter(OSPR_3day_summary, Age != "Unkown")
 OSPR_3day_summary<-filter(OSPR_3day_summary, trackId != "Rodney.2014")
 ```
 
+## Data Analysis
 
 #### Exploratory data analysis
 
-First I will look at the distribution of data for each sampling frequency using histograms, correlation, and PCA
+First I will look at the distribution of data for each sampling frequency using histograms, correlation, and PCA. The distribution of my data will determine the kinds of tests I employ later on. 
 ```{r}
 #normality and correlation of dependent variables using 'PerformanceAnalytics' package
 chart.Correlation(OSPR_1hour_summary[, 4:10], histogram=TRUE, pch=19, method = "spearman")
@@ -1017,9 +1021,10 @@ fviz_pca_ind(OSPR_3day_PCA,
 #No differences between origins
 ```
 
-#### Statistical models
+#### Testing hypotheses in osprey literature
 
-Are osprey leap-frog migrants?
+Are osprey leap-frog migrants -> Do osprey starting at higher latitudes migrate further?
+
 ```{r}
 # 1-hour
 # Are osprey leap-frog migrants: do birds that migrate further, start further north?
@@ -1034,7 +1039,7 @@ summary(lm(Displacement ~ Start_Lat, data = OSPR_3day_summary)) #nope
 #osprey are not leap-frog migrants (I also ran it with total distance and got the same results)
 ```
 
-Do osprey exhibit differential migration between sexes where one sex migrates further than another?
+Do osprey exhibit differential migration between sexes where one sex migrates further than another? At the moment I can't test whether this is impact by region of origin.
 ```{r}
 #1-hour
 #Female osprey are known to migrate further than males: Is this true and does it influence the trends above?
@@ -1148,14 +1153,16 @@ t.test(J_3day$Displacement, A_3day$Displacement, var.equal=TRUE) #significant di
 #Conclusions: Similar conclusions with displacement except that the p-values for differences between sex were smaller while the p-values between age were larger suggesting that sex may be more influencial...
 ```
 
-I predict migration strategies should be impacted by the distance the bird flies, the sex, and the age of the bird. However, I do not have enough data on origin of the birds to make any conclusions and the sexes and age data is very skewed. Instead of attempting to determine the relationship between groups, I can use HCA to determine the relationship between individuals and use a heat map to compare the differences in demographics, geographic origin, and migratory characteristics to get a better idea of how osprey with more similar strategies relate to one another.  
+Create a table for these results...
+
+I predict migration strategies should be impacted by the distance the bird flies, the sex, and the age of the bird. However, I do not have enough data on origin of the birds to make any conclusions and the sexes and age data is very skewed. Instead of attempting to determine the relationship between groups, I can use HCA to determine the relationship between individuals and use a heat map + annotations to compare the differences in demographics, geographic origin, and migratory characteristics to get a better idea of how osprey with more similar strategies relate to one another. I can also look for distinct clusters within my data and use a PERMANOVA to test if clusters are significantly different. 
 
 #### HCA
 ```{r}
 # 1-hour
 #normalize data for HCA using z scores since our data is skewed
 OSPR_1hour_norm<-lapply(OSPR_1hour_summary[,5:11], scale)
-OSPR_1hour_norm<-cbind(OSPR_1hour_norm, OSPR_1hour_summary[,c(1:4, 12:19)])
+OSPR_1hour_norm<-cbind(OSPR_1hour_norm, OSPR_1hour_summary[,c(1:4, 12:20)])
 #determine the best linake method
 m <- c( "average", "single", "complete", "ward")
 names(m) <- c( "average", "single", "complete", "ward")
@@ -1196,10 +1203,8 @@ target<-as.data.frame(labels(OSPR_1hour_clust))
 OSPR_1hour_norm<-OSPR_1hour_norm[ order(match(OSPR_1hour_norm$trackId, 
                              target$`labels(OSPR_1hour_clust)`)), ]
 row_dend = dendsort(OSPR_1hour_clust)
-annotation<-rowAnnotation(df = OSPR_1hour_norm[,13:19])
-
+annotation<-rowAnnotation(df = OSPR_1hour_norm[,c("Start_Lat", "Age", "Sex", "Birth_Year", "Status", "Origin", "Multiple")])
 #row_labels = OSPR_1hour_norm$trackId,
-?Heatmap
 Heatmap(as.matrix(OSPR_1hour_norm[,1:7]),
         col = rampcols,
         cluster_columns = F,
@@ -1216,11 +1221,13 @@ Heatmap(as.matrix(OSPR_1hour_norm[,1:7]),
         show_row_names = F,
         row_names_gp = gpar(fontsize = 2),
         row_dend_width = unit(3, "cm"),
-        row_split = 3,
-        border = TRUE
+        row_split = 2,
+        border = TRUE,
+        left_annotation = annotation
         )
 
 ```
+Why is my dendrogram not sorting correctly????
 
 ```{r}
 # 3-hour
@@ -1414,7 +1421,7 @@ OSPR_1hour_norm<-mutate(OSPR_1hour_norm, cluster = cut_avg_1hour)
 #test assumptions for PERMANOVA
 dis_1hour <- vegdist(OSPR_1hour_norm[,1:7], method = "euclidean")
 mod <- betadisper(dis_1hour, OSPR_1hour_norm$cluster, type = "centroid")
-anova(mod) #does not meet assumptions and design is unbalanced. Dispersions are signficantly different
+anova(mod) #does not meet assumptions and design is unbalanced. Dispersion are significantly different
 plot(mod) #largest group has the most dispersion = PERMANOVA test will be overly conservative
 adonis2(dis_1hour ~ OSPR_1hour_norm$cluster, method = "euclidean") #we still see a significant result so the two groups are different. 
 
@@ -1425,9 +1432,17 @@ clus1_mean<-lapply(clus1_1hour[,5:11], mean)
 clus2_1hour<-filter(OSPR_1hour_summary, cluster == 2)
 clus2_mean<-lapply(clus2_1hour[,5:11], mean)
 cluster_mean<-rbind(clus1_mean, clus2_mean)
+View(OSPR_1hour_summary)
 
-boxplot(OSPR_1hour_summary$cluster, OSPR_1hour_summary$duration)
+ggplot(OSPR_1hour_summary, aes (x=as.factor(cluster), y = Start_Lat)) +
+  geom_boxplot()
+#turn speed and absolute turning angle do not look different
+#displacement is different between the two groups
 ```
+
+I will want to make a table of t-test p-values comparing the different variables to each other for each grouping, plus the two continuous explanatory values. 
+
+I will want to create a table with the percentage composition of each categorical variable for each cluster. 
 
 ```{r}
 #add cluster labels to data 
