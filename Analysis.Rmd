@@ -1,0 +1,129 @@
+---
+title: "Analysis"
+author: "Lewis Hakam"
+date: "1/26/2024"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(vegan)
+```
+
+```{r}
+fviz_screeplot(EventsPCA_1hour, addlabels = TRUE)
+#Loadings plot
+fviz_pca_var(EventsPCA_1hour, col.var =  "cos2", arrowsize = 1.5, repel = T,
+             circlesize = 2, title = " ") +
+  theme(legend.position = "none", 
+        axis.title.x = element_text(margin = margin(t = 30)),
+        axis.title.y = element_text(margin = margin(r = 30)),
+        axis.text = element_text(size = 15)) +
+  scale_color_gradient2(low = "red", mid = "blue", high = "green", 
+                        midpoint = 0.5, limits = c(0,1))
+# Contributions of variables to PC1
+fviz_contrib(EventsPCA_1hour, choice = "var", axes = 1, top = 10, title = "Contribution of Variables to PC1")
+# Contributions of variables to PC2
+fviz_contrib(EventsPCA_1hour, choice = "var", axes = 2, top = 10, title = "Contribution of Variables to PC2")
+#Score Plot
+fviz_pca_ind(EventsPCA_1hour,
+             geom.ind = "none",
+             palette = colors,
+             col.ind = as.factor(Subset11hour$migrationEvent),
+             addEllipses = TRUE, 
+             mean.point = T,
+             ellipse.alpha = 0,
+             mean.point.size = 2,
+             scaleshape = "none",
+             title = "Score Plot Means and Dispersion"
+             ) +
+  theme(legend.position = "none") +
+  scale_shape_identity() +
+  scale_shape_manual(values = c(0,0,1,1,1,1,1,1,2,2,3,3,4,4,5,5,5,6,6,6,8,8,9,9,9,9, 10,10,11,11,11,11,12,12,12,12,12,13,13,14,14,14,15,15,16,16,17,17,17,17,64,64,64,64,40,40,40,33,33,35,35,38,38))
+
+EventsPCA_3hour<-PCA(Subset13hour[,4:7], scale = T)
+fviz_screeplot(EventsPCA_3hour, addlabels = TRUE, graph = F)
+fviz_pca_var(EventsPCA_3hour, col.var =  "cos2", arrowsize = 1.5, repel = T,
+             circlesize = 2, title = " ") +
+  theme(legend.position = "none", 
+        axis.title.x = element_text(margin = margin(t = 30)),
+        axis.title.y = element_text(margin = margin(r = 30)),
+        axis.text = element_text(size = 15)) +
+  scale_color_gradient2(low = "red", mid = "blue", high = "green", 
+                        midpoint = 0.5, limits = c(0,1))
+# Contributions of variables to PC1
+fviz_contrib(EventsPCA_3hour, choice = "var", axes = 1, top = 10, title = "Contribution of Variables to PC1")
+# Contributions of variables to PC2
+fviz_contrib(EventsPCA_3hour, choice = "var", axes = 2, top = 10, title = "Contribution of Variables to PC2")
+#Score Plot
+fviz_pca_ind(EventsPCA_3hour,
+             geom.ind = "none",
+             palette = colors,
+             col.ind = as.factor(Subset13hour$migrationEvent),
+             addEllipses = TRUE, 
+             mean.point = T,
+             ellipse.alpha = 0,
+             mean.point.size = 2,
+             scaleshape = "none",
+             title = "Score Plot Means and Dispersion"
+             ) +
+  theme(legend.position = "none") +
+  scale_shape_identity() +
+  scale_shape_manual(values = c(0,0,1,1,1,1,1,1,2,2,3,3,4,4,5,5,5,6,6,6,8,8,9,9,9,9, 10,10,11,11,11,11,12,12,12,12,12,13,13,14,14,14,15,15,16,16,17,17,17,17,64,64,64,64,40,40,40,33,33,35,35,38,38))
+
+EventsPCA_1day<-PCA(Subset11day[,4:7], scale = T)
+fviz_screeplot(EventsPCA_1day, addlabels = TRUE, graph = F)
+fviz_pca_var(EventsPCA_1day, col.var =  "cos2", arrowsize = 1.5, repel = T,
+             circlesize = 2, title = " ") +
+  theme(legend.position = "none", 
+        axis.title.x = element_text(margin = margin(t = 30)),
+        axis.title.y = element_text(margin = margin(r = 30)),
+        axis.text = element_text(size = 15)) +
+  scale_color_gradient2(low = "red", mid = "blue", high = "green", 
+                        midpoint = 0.5, limits = c(0,1))
+# Contributions of variables to PC1
+fviz_contrib(EventsPCA_1day, choice = "var", axes = 1, top = 10, title = "Contribution of Variables to PC1")
+# Contributions of variables to PC2
+fviz_contrib(EventsPCA_1day, choice = "var", axes = 2, top = 10, title = "Contribution of Variables to PC2")
+#Score Plot
+fviz_pca_ind(EventsPCA_1day,
+             geom.ind = "none",
+             palette = colors,
+             col.ind = as.factor(Subset11day$migrationEvent),
+             addEllipses = TRUE, 
+             mean.point = T,
+             ellipse.alpha = 0,
+             mean.point.size = 2,
+             scaleshape = "none",
+             title = "Score Plot Means and Dispersion"
+             ) +
+  theme(legend.position = "none") +
+  scale_shape_identity() +
+  scale_shape_manual(values = c(0,0,1,1,1,1,1,1,2,2,3,3,4,4,5,5,5,6,6,6,8,8,9,9,9,9, 10,10,11,11,11,11,12,12,12,12,12,13,13,14,14,14,15,15,16,16,17,17,17,17,64,64,64,64,40,40,40,33,33,35,35,38,38))
+```
+
+```{r}
+#loadigns plot legend
+fviz_pca_var(EventsPCA_1day, col.var =  "cos2", title = "Loadings Plot") +
+  theme(legend.position = "none") +
+  scale_color_gradient2(low = "red", mid = "blue", high = "green", midpoint = 0.5, limits = c(0,1)) +
+  theme(legend.position = "bottom", legend.key.width = unit(3,"cm"), legend.title = element_blank())
+
+
+#score plot legend
+fviz_pca_ind(EventsPCA_1hour,
+             geom.ind = "none",
+             palette = colors,
+             col.ind = as.factor(Subset11hour$migrationEvent),
+             addEllipses = TRUE, 
+             mean.point = T,
+             ellipse.alpha = 0,
+             mean.point.size = 2,
+             scaleshape = "none"
+             ) +
+  theme(legend.position = "right") +
+  guides(colour = guide_legend(nrow = 32)) +
+  scale_shape_identity() +
+  scale_shape_manual(values = c(0,0,1,1,1,1,1,1,2,2,3,3,4,4,5,5,5,6,6,6,8,8,9,9,9,9, 10,10,11,11,11,11,12,12,12,12,12,13,13,14,14,14,15,15,16,16,17,17,17,17,64,64,64,64,40,40,40,33,33,35,35,38,38))
+```
+
