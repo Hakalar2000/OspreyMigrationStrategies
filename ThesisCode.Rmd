@@ -6,42 +6,35 @@ output: html_document
 
 ```{r setup, include=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-#personal access token if needed: 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
-#Data retrieval and manipulation
-library(move) #download, manipulate, anlayze data from Movebank
-library(sp) #spatial objects in Movebank
-library(moveVis) #converting a data frame to a move object
-#organizating, filtering, cleaning data
-library(plyr) #batch calculating stats for subsets of data
-library(dplyr) #deleted and re installed rlang
-library(tidyr) #extracting character string values
-library(readr) #read in CSV files
-library(stats) #basic stats functions and tools
-library(devtools) #deleted and re installed htmltools
-library(lubridate) #ensuring date formats are correct
-library(solaR)
-library(solartime)
-library(lutz)
+library(move) #Download, manipulate, anlayze data from Movebank
+library(sp) #Spatial objects in Movebank
+library(moveVis) #Converting a data frame to a move object
+library(plyr) #Batch calculating stats for subsets of data
+library(dplyr) #Deleted and re installed rlang
+library(tidyr) #Extracting character string values
+library(readr) #Read in CSV files
+library(stats) #Basic stats functions and tools
+library(devtools) #Download non-cran packages
+library(lubridate) #Ensuring date formats are correct
+library(solartime) #Calculate daylight hours
 find_mode <- function(x) {
   u <- unique(x)
   tab <- tabulate(match(x, u))
   u[tab == max(tab)]
-} #no built in function for mode in R so I got this one from the web. 
-library(data.table) #manipulating data tables
-#Movement models
-library(adehabitatLT) #creating trajectories and calculating characteristics. 
-#mapping
-library(leaflet) #interactive maps
-library(htmltools) #popups for interactive maps
-library(ggplot2) #graphs and maps
-library(sf) #spatial objects for leaflet and ggplot
-library(tmap) #package containing world country polygons
+} #No built in function for mode in R so I got this one from the web. 
+library(data.table) #Manipulating data tables
+library(adehabitatLT) #Creating trajectories and calculating characteristics. 
+library(leaflet) #Interactive maps
+library(htmltools) #Popups for interactive maps
+library(ggplot2) #Graphs and maps
+library(sf) #Spatial objects for leaflet and ggplot
+library(tmap) #Package containing world country polygons
 wgs84<-CRS("+proj=longlat +datum=WGS84") #GCS in WGS 1984
-azim_Bierr = CRS("+proj=aeqd +lat_0=19 +lon_0=-72 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs") #PCS in custom azimuthal equidistant projection. estimated middle point of the data visually with Google Maps
-data(World) #world data with country polygons needed for mapping
-world_sf<-st_transform(World, azim_Bierr) #projected world data
-world_filter<-world_sf[,"name"] #reduce info for spatial join
-world_filter$name<-as.character(world_filter$name) #ensure variables are in appropriate data type
+azim_Bierr = CRS("+proj=aeqd +lat_0=19 +lon_0=-72 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs") #PCS in custom azimuthal equidistant projection. 
+data(World) #World data with country polygons needed for mapping
+world_sf<-st_transform(World, azim_Bierr) #Projected world data
+world_filter<-world_sf[,"name"] #Reduce info for spatial join
+world_filter$name<-as.character(world_filter$name) #Ensure world polygon data is an appropriate data type
 plotshit<-function(y) {
   ggplot(y) +
     geom_sf(data = world_sf, fill = "#464646") +
@@ -50,26 +43,25 @@ plotshit<-function(y) {
     theme(legend.position = "bottom", legend.text = element_text(size = 7)) +
     labs(color = "year") +
     ggtitle(paste0(y$trackId))
-} #function for batch plotting in a for loop
+} #Function for batch plotting in a for loop
 plotshit2<-function(y) {
   ggplot(y) +
   geom_sf(data = world_sf, fill = "#464646") +
   geom_sf(size = 1, aes(color = DaylightUTC)) +
   coord_sf(datum = st_crs(azim_Bierr), xlim = c(-4000000, 3000000), ylim = c(3500000, -2500000))+
   ggtitle(paste0(y$trackId))
-} #daylight assessment
-#data analysis
+} #Daylight assessment
 library(car) # Q-Q plots for EDA
-library(rstatix) #shapiro-Wilk Normality test
+library(rstatix) #Shapiro-Wilk Normality test
 library(vegan) #PERMANOVA
-library(pairwiseAdonis) #post-hoc multilevel comparison test
-library(MicEco) #omega-squared values
-library(biostat) #CLD groupings
-library(stringr) #extracting string info from dataframes. Useful for manipulating text column values.
-library(factoextra) #customizing PCA biplots
+library(pairwiseAdonis) # PERMANOVA post-hoc multilevel comparison test
+library(MicEco) # Omega-squared values
+library(stringr) #Extracting string info from dataframes. Useful for manipulating text column values.
+library(factoextra) #Customizing PCA biplots
 library(FactoMineR) #PCA
-library(RColorBrewer) #creating custom color palette
-library(ComplexHeatmap) #correlation plots in R
+library(RColorBrewer) #Creating custom color palette
+library(ComplexHeatmap) #Correlation plots in R
+library(stats) #TukeyHSD - package comes with base R
 library(rootdetectR) #Making results of TukeyHSD into a matrix
 ```
 
@@ -77,69 +69,20 @@ library(rootdetectR) #Making results of TukeyHSD into a matrix
 
 > Hey there! If you are viewing this, you are interested in how I analyzed osprey tracking data for my final thesis, completed in Spring 2024. I will guide through my step by step process to answer three questions:
 
-> **Do individual ospreys use the same migration strategy between years?**
-> **Do individual ospreys use the same migration strategy between regions?**
+> **Do individual ospreys use the same migration strategy between years or each other?**
+> **Do ospreys use the same migration strategy between regions?**
 > **How does varying the temporal sampling frequency affect my results?**
 
 > I have used R Markdown, which may be new for you. This document will not go over the nuances I used to code the Markdown file. For simplicity and privacy, not all code lines are shown in the Rmarkdown output when downloading data. I have done my best to annotate my code for easy interpretation, but this is not a guide on how to use R. Some aspects of coding will not be explained.
 
 
-## Packages
+## A Note on Installing Packages
 
-> Here is a list of packages and functions in the order of their first appearance that I used followed by custom functions and R objects. You can also find a list of packages and their uses in Appendix **XX**. You will likely have to use the function install.packages ("Package") before you can access packages using the library (Package) function if you are new to R. I had a few instances where I had supporting packages downloaded, but they were not up-to-date nor could I force them to update. For these packages I had to locally delete the packages that were not updating and then re-install them. Many of these packages have dependencies (they require other packages) so do not be alarmed if download takes a while. Lastly, some packages are not from CRAN, rather they are from personal repositories (repos) on github or from Bioconductor. These packages require different download code. To download packages from repos, you need to use the install_github("username/repo/package file name",) from the 'devtools' package. For Bioconductor packages you need to use the install("package name") function from the 'BioManager' package.
+> You will likely have to use the function install.packages ("Package") before you can access packages using the library (Package) function if you are new to R. I had a few instances where I had supporting packages downloaded, but they were not up-to-date nor could I force them to update. For these packages I had to locally delete the packages that were not updating and then re-install them. Many of these packages have dependencies (they require other packages) so do not be alarmed if download takes a while. Lastly, some packages are not from CRAN, rather they are from personal repositories (repos) on github or from Bioconductor. These packages require different download code. To download packages from repos, you need to use the install_github("username/repo/package file name",) from the 'devtools' package. For Bioconductor packages you need to use the install("package name") function from the 'BioManager' package.
 
-* CRAN: install.packages() from base R *
-* BioConductor: install() from BioManager **
-* Personal Repositories: install_github() from devtools ***
-
-```{r, eval=FALSE}
-library(move) # download and retrieve movement data and characteristics *
-library(sp) # Create sp spatial objects *
-library(moveVis) # transform dataframes into move objects ***
-library(plyr) # apply a function to a list *
-library(dplyr) # manipulate dataframes and filter data *
-library(stats) # some statistic tools plus HCA function *
-library(lutz) # Determine if there was daylight during a GPS fix *
-library(solaR) # Calculate local solar time *
-library(lubridate) # Manipulate time/date formats *
-library(data.table) # Work with data tables *
-library(migrateR) # Calculate start/end dates of migration **
-library(adehabitatLT) # Find fpt and displacement *
-library(ggplot2) # graphing/mapping *
-library(sf) # sf spatial objects in R for mapping *
-library(tmap) # world country shapefiles *
-library(PerformanceAnalytics) # Correlations and EDA *
-library(FactoMineR) # PCA biplots *
-library(hopkins) # Hopkins statistic for clustering potential *
-library(cluster) # Linkage methods *
-library(NbClust)# Optimal clusterss *
-library(dendextend) # Modify dendrogram *
-library(ComplexHeatmap) # Heatmaps **
-library(RColorBrewer) # Color palette customization *
-library(vegan) # PERMANOVA *
-
-
-wgs84<-CRS("+proj=longlat +datum=WGS84") # GCS
-azim_orign = CRS("+proj=aeqd +lat_0=24.43 +lon_0=-82.74 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs") # Azimuthal Equidistant PCS
-data(World) # Country Shapefiles
-world_sf<-st_transform(World, azim_orign) #Country Shapefiles projected with custom PCS
-find_mode <- function(x) {
-  u <- unique(x)
-  tab <- tabulate(match(x, u))
-  u[tab == max(tab)]
-} # Mode function
-plotshit<-function(y) {
-  ggplot(y) +
-    geom_sf(data = world_sf, fill = "white") +
-    geom_sf(size = 1, aes(color = year)) +
-    coord_sf(datum = st_crs(azim_orign), xlim = c(-4000000, 3000000), ylim = c(3500000, -2500000)) +
-    theme(legend.position = "bottom", legend.text = element_text(size = 7)) +
-    labs(color = "year") +
-    ggtitle(paste0(y$trackId))
-} # Batch Map raw data by individual bird and year function
-```
-
-
+* CRAN: install.packages() from base R 
+* BioConductor: install() from BioManager 
+* Personal Repositories: install_github() from devtools
 
 ## Downloading and Filtering Tracking Data
 
@@ -157,9 +100,6 @@ plotshit<-function(y) {
 loginStored <- movebankLogin(username = "UserName", password = "Password")
 ```
 
-```{r, echo=FALSE}
-loginStored <- movebankLogin(username = "lhaka2", password = "!ShamaJ2016!")
-```
 
 #### Downloading Movebank Summary Table
 
@@ -273,6 +213,8 @@ leaflet(filter(Bierregaard_Osprey_Data_sf, migrationEvent == "Art_2012")) %>%
   addPopups(popup = ~htmlEscape(timestamp))
 ```
 
+>Remove events that do not fit criteria. 
+
 ```{r}
 #create a list of migration events to remove. 
 remove<-c("Woody_2015", "Weber_2014", "Virginia_2016", "Uncas_2014", "Trepassey_2016", "Tommy_2017", "Tilton_2014", "Thatcher_2011", "Snowy_2012", "Sanford_2011", "Saco_2011", "Ron_2015", "Roger_Tory_2014", "Rodney_2014", "Rock_2017", "Rammie_2013", "Rafael_2009", "Penelope_2009", "Peirce_2013", "Pearl_2013", "North_Fork_Bob_2015", "Neale_2010", "Mackenzie_2013", "Luke_2007", "Lizzie_2015", "Little_Ricky_2008", "Layla_2017", "Katy_2009", "Katbird_2011", "Jocelyn_2016", "Hix_Jr_2009", "Gunny_2010", "Gerry_2014", "Flow_2015", "Flow_2017", "Felix_2007", "Daphne_2017", "Claws_2007", "Claws_2008", "Chip_2012", "Chester_2014", "Captain_Liz_2013", "Caleb_2013", "Buck_2010", "Bridget_2014", "Bridger_2012", "Borealis_2017", "Borealis_2018", "Blackie_2014", "Belle_2011", "Aster_2017", "Artoo_2014", "Art_2013")
@@ -283,8 +225,9 @@ length(unique(Bierregaard_Osprey_Data$migrationEvent))
 length(unique(Bierregaard_Osprey_Data$trackId)) #92 migration events for 51 individuals
 ```
 
+>#While using leaflet works, this method will take a long grueling time to complete. If you want to expedite this process you can export the data points to CSV files and find start/end dates in ArcGIS or QGIS. The code below will allow you to do this. 
+
 ```{r, eval=FALSE}
-#While using leaflet works, this method will take a long grueling time to complete. If you want to expedite this process you can export the data points to CSV files and find start/end dates in ArcGIS or QGIS. The code below will allow you to do this. 
 Bierr_Event<-unique(Bierregaard_Osprey_Data$migrationEvent)
 Bierregaard_Osprey_Data$migrationEvent<-gsub(" ", "_", Bierregaard_Osprey_Data$migrationEvent)
 for (i in Bierr_Event) {
@@ -320,7 +263,7 @@ for (i in events) {
 ## Create Data Subsets
 #### Regularize the Trajectories
 
-> Before we break down data into subsets, I need to regularized the data. Data was not collected at perfect 1-hour intervals for a 24 hour period. This means that when I calculate trajectory characteristics, points from the end of one day may connect to points at the start of the next day. If the osprey was sleeping during this time period, speed values would be very low and add inaccuracy to my dataset. When osprey roost they do not move. Regularizing will help me pinpoint times when osprey roosted so those points can be taken out later for 1-hour and 3-hour sampling frequencies. There are of course exceptions when osprey cross over open water. In these cases, speed should be high even after dark. 
+> Before we break down data into subsets, I need to regularized the data. Data was not collected at perfect 1-hour intervals for a 24 hour period. This means that when I calculate trajectory characteristics, points from the end of one day may connect to points at the start of the next day. If the osprey was sleeping during this time period, speed values would be very low and add inaccuracy to my dataset since I am only concerned with active migration. Regularizing will help me pinpoint times when osprey roosted so those points can be taken out later for 1-hour and 3-hour sampling frequencies after calculating trajectory characteristics. There are of course exceptions when osprey cross over open water. In these cases, speed should be high even after dark. 
 
 ```{r}
 #Convert to a move object. To do this I had to use the moveVis package since the move function does not work well with actual dataframes. The move package has a number of very convenient functions that allow me to calculate a number of different movement characteristics and prep the data from analysis.
@@ -406,11 +349,14 @@ length(unique(segments_final$SegmentID)) #46 individuals with 198 migration segm
 > Next I will thin my trajectories to 3-hour, 1-day, and 3-day sampling frequencies for both subsets.
 
 ```{r}
+#subset 1
 #First create a move object
 Subset1_1hour_move<-df2move(Subset1_1hour,
         proj = wgs84, 
         x = "coords.x1", y = "coords.x2", 
         time = "timestamps", track_id = "trackId")
+#Regularizing thinned/resampled data to 1-hour so no need to thin to 1 hour again. 
+
 #3-hour sampling frequency
 Subset1_3hr<-list()
 for (i in 1:63) {
@@ -439,6 +385,8 @@ plot(Subset1_1day_move[[1]])
 ```
 
 ```{r}
+#Subset2
+
 #First create a move object
 Subset2_1hour_move<-df2move(segments_final,
         proj = wgs84, 
@@ -788,7 +736,7 @@ Subset2_1day_fin<-cbind(Subset2_1day_move_azim_DF, fpt_subset2_1day)
 * Subset2_1day_fin
 * Subset2_3day_fin
 
-#### Remove Nightime Fixes
+#### Remove Nightime Fixes and prepare data for analysis
 
 > Lastly, I will remove fixes calculated during hours of darkness where the bird was travelling overland. while osprey may migrate at night on occasion, this typically only occurs over water or deserts. The osprey in this study do not encounter deserts, so I will remove any points during darkness that intersect with the World country polygons. 
 
@@ -855,17 +803,6 @@ Subset2_3hr_fin_sf_filter$DaylightUTC<-as.character(Subset2_3hr_fin_sf_filter$Da
 Subset2_3hr_fin_sf_filter<-Subset2_3hr_fin_sf_filter[!(Subset2_3hr_fin_sf_filter$name != "Ocean" & 
                               Subset2_3hr_fin_sf_filter$DaylightUTC == "FALSE"),]
 Subset2_3hr_fin_filter<-st_drop_geometry(Subset2_3hr_fin_sf_filter)
-```
-
-> Optional mapping to visualize daylight and after daylight points.
-
-```{r}
-names2<-unique(Subset1_3hr_fin_sf_filter$trackId)
-for (i in names2) {
-  y = filter(Subset1_1hour_fin_sf_filter, trackId == i)
-  pws2<-plotshit2(y)
-  print(pws2)
-}
 ```
 
 > Remove NA values and clean up data columns
@@ -1007,7 +944,7 @@ Samp_Subset21day <- Samp_Subset21day %>%
 
 #### Exploratory data analysis
 
-> Scale/normalize data for PERMANOVA
+> Scale/normalize data for PERMANOVA. I scaled data since distance matrixs are heavily influenced by variable measurement sizes. Measurements at a larger scale (such as between 50 to 200) will overshadow measurements at a lower scale (such as 0 - 1). 
 
 ```{r}
 #subset 1
@@ -1497,11 +1434,11 @@ fviz_pca_ind(EventsPCA2_1day,
         axis.text = element_text(size = 15))
 ```
 
-#### PERMANOVA
+#### PERMANOVA and PERMDISP
 
-> Many variables do not seem normally distributed. To avoid issues with normal distribution assumptions, I will use a non-parametric test. Since I am comparing groups that each have multiple variables, I will use a PERMANOVA. To start, you will first need to see if you data meets the PERMANOVA dispersion assumptions. Interpretation of p-values will be heavily influenced based on whether the assumptions are met. <https://www.youtube.com/watch?v=OyB_w4XNQ58>
+> Many variables do not seem normally distributed. To avoid issues with normal distribution assumptions, I will use a non-parametric test. Since I am comparing groups that each have multiple variables, I will use a PERMANOVA. To start, you will first need to see if you data meets the PERMANOVA dispersion assumptions. Interpretation of p-values will be heavily influenced based on whether the assumptions of PERMANOVA are met.
 
-> Between Migration Events
+> Subset 1
 
 ```{r}
 set.seed(2016)
@@ -1723,7 +1660,7 @@ Heatmap(pairperm_DF24, name = "p-value",
         heatmap_legend_param = list(legend_height = unit(12, "cm")))
 ```
 
-> Between Individuals...Did not take a subsample for each individual
+> Subset 2
 
 ```{r}
 set.seed(2016)
@@ -1784,12 +1721,8 @@ in_pairperm_24
 * Download a CSV file from github: <https://lokraj.me/post/download-github-data/>
 * Github and RStudio interface: <https://rfortherestofus.com/2021/02/how-to-use-git-github-with-r/>
 * Finding mode in R: <https://www.statology.org/mode-in-r/>
-* migrateR Vignette: <https://github.com/dbspitz/migrateR/blob/master/migrateR%20vignette.pdf>
 * Projections in R: <https://www.nceas.ucsb.edu/sites/default/files/2020-04/OverviewCoordinateReferenceSystems.pdf>
 * adehabitatLT use (not the vignette): <http://www.r-gators.com/2018/01/31/wildlife-tracking-data-in-r/>
-* Hopkins stat: <https://sushildeore99.medium.com/really-what-is-hopkins-statistic-bad1265df4b>, <https://stats.stackexchange.com/questions/332651/validating-cluster-tendency-using-hopkins-statistic>
-
-
 
 
 
