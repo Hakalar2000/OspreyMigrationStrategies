@@ -1,240 +1,49 @@
-Indvidual,Migration Year,Segment,Multiple,migrationEvent,SegmentID,Device,Starting_Location,Completion,Year Born,Sex,Age,Seg_Start,Seg_End,Mig_Start,Mig_End,Duration,Displacement,Distance,Sinuosity,Abs_Angle,Rel_Angle,Angular_Speed,Travel_Speed,mFPT,Distance over water,Notes
-Art,2012,US,No,Art_2012,Art_2012_US,GPS,New Hampshire,Complete,2009,M,Adult,2012-09-11 15:00:00,2012-09-24 16:00:00,2012-09-11 15:00:00,2012-10-21 21:00:00,13.04,,,,,,,,,,
-Art,2012,CAR,No,Art_2012,Art_2012_CAR,GPS,New Hampshire,Complete,2009,M,Adult,2012-09-24 16:00:00,2012-10-05 13:00:00,2012-09-11 15:00:00,2012-10-21 21:00:00,10.88,,,,,,,,,,
-Art,2012,SCA,No,Art_2012,Art_2012_SCA,GPS,New Hampshire,Complete,2009,M,Adult,2012-10-05 13:00:00,2012-10-21 21:00:00,2012-09-11 15:00:00,2012-10-21 21:00:00,16.33,,,,,,,,,,
-Artoo,2013,US,Yes,Artoo_2013,Artoo_2013_US,GPS,New Hampshire,Complete,2013,M,Juvenile,2013-08-15 16:00:00,2013-10-01 15:00:00,2013-08-15 16:00:00,2013-10-24 19:00:00,46.96,,,,,,,,,,
-Artoo,2013,CAR,Yes,Artoo_2013,Artoo_2013_CAR,GPS,New Hampshire,Complete,2013,M,Juvenile,2013-10-01 15:00:00,2013-10-20 15:00:00,2013-08-15 16:00:00,2013-10-24 19:00:00,19,,,,,,,,,,
-Artoo,2013,SCA,Yes,Artoo_2013,Artoo_2013_SCA,GPS,New Hampshire,Complete,2013,M,Juvenile,2013-10-20 15:00:00,2013-10-24 19:00:00,2013-08-15 16:00:00,2013-10-24 19:00:00,4.17,,,,,,,,,,
-Artoo,2015,US,Yes,Artoo_2015,Artoo_2015_US,GPS,New Hampshire,Incomplete,2013,M,Adult,2015-09-01 17:00:00,2015-09-18 15:00:00,2015-09-01 17:00:00,2015-09-18 23:00:00,16.92,,,,,,,,,,Late spring migration
-Bea,2009,US,No,Bea_2009,Bea_2009_US,GPS,Massachusetts,Complete,2009,F,Juvenile,2009-09-14 14:00:00,2009-09-16 14:00:00,2009-09-14 14:00:00,2009-10-20 17:00:00,2,,,,,,,,,,
-Bea,2009,CAR,No,Bea_2009,Bea_2009_CAR,GPS,Massachusetts,Complete,2009,F,Juvenile,2009-09-16 14:00:00,2009-09-23 13:00:00,2009-09-14 14:00:00,2009-10-20 17:00:00,6.96,,,,,,,,,,
-Bea,2009,SCA,No,Bea_2009,Bea_2009_SCA,GPS,Massachusetts,Complete,2009,F,Juvenile,2009-09-23 13:00:00,2009-10-20 17:00:00,2009-09-14 14:00:00,2009-10-20 17:00:00,27.17,,,,,,,,,,
-Belle,2010,US,Yes,Belle_2010,Belle_2010_US,GPS,Massachusetts,Complete,2010,M,Juvenile,2010-10-16 13:00:00,2010-10-18 14:00:00,2010-10-16 13:00:00,2010-12-11 14:00:00,2.04,,,,,,,,,,
-Belle,2010,CAR,Yes,Belle_2010,Belle_2010_CAR,GPS,Massachusetts,Complete,2010,M,Juvenile,2010-10-18 14:00:00,2010-10-22 17:00:00,2010-10-16 13:00:00,2010-12-11 14:00:00,4.13,,,,,,,,,,
-Belle,2010,SCA,Yes,Belle_2010,Belle_2010_SCA,GPS,Massachusetts,Complete,2010,M,Juvenile,2010-10-22 17:00:00,2010-12-11 14:00:00,2010-10-16 13:00:00,2010-12-11 14:00:00,49.88,,,,,,,,,,
-Belle,2012,US,Yes,Belle_2012,Belle_2012_US,GPS,Massachusetts,Complete,2010,M,Adult,2012-09-20 17:00:00,2012-09-24 22:00:00,2012-09-20 17:00:00,2012-10-28 13:00:00,4.21,,,,,,,,,,
-Belle,2012,CAR,Yes,Belle_2012,Belle_2012_CAR,GPS,Massachusetts,Complete,2010,M,Adult,2012-09-24 22:00:00,2012-10-06 14:00:00,2012-09-20 17:00:00,2012-10-28 13:00:00,11.67,,,,,,,,,,
-Belle,2012,SCA,Yes,Belle_2012,Belle_2012_SCA,GPS,Massachusetts,Complete,2010,M,Adult,2012-10-06 14:00:00,2012-10-28 13:00:00,2012-09-20 17:00:00,2012-10-28 13:00:00,21.96,,,,,,,,,,
-Belle,2013,US,Yes,Belle_2013,Belle_2013_US,GPS,Massachusetts,Complete,2010,M,Adult,2013-09-17 14:00:00,2013-09-19 22:00:00,2013-09-17 14:00:00,2013-10-16 19:00:00,2.33,,,,,,,,,,
-Belle,2013,CAR,Yes,Belle_2013,Belle_2013_CAR,GPS,Massachusetts,Complete,2010,M,Adult,2013-09-19 22:00:00,2013-09-24 13:00:00,2013-09-17 14:00:00,2013-10-16 19:00:00,4.63,,,,,,,,,,
-Belle,2013,SCA,Yes,Belle_2013,Belle_2013_SCA,GPS,Massachusetts,Complete,2010,M,Adult,2013-09-24 13:00:00,2013-10-16 19:00:00,2013-09-17 14:00:00,2013-10-16 19:00:00,22.25,,,,,,,,,,
-Belle,2014,US,Yes,Belle_2014,Belle_2014_US,GPS,Massachusetts,Complete,2010,M,Adult,2014-09-19 14:00:00,2014-09-27 23:00:00,2014-09-19 14:00:00,2014-10-22 15:00:00,8.38,,,,,,,,,,
-Belle,2014,CAR,Yes,Belle_2014,Belle_2014_CAR,GPS,Massachusetts,Complete,2010,M,Adult,2014-09-27 23:00:00,2014-10-08 13:00:00,2014-09-19 14:00:00,2014-10-22 15:00:00,10.58,,,,,,,,,,
-Belle,2014,SCA,Yes,Belle_2014,Belle_2014_SCA,GPS,Massachusetts,Complete,2010,M,Adult,2014-10-08 13:00:00,2014-10-22 15:00:00,2014-09-19 14:00:00,2014-10-22 15:00:00,14.08,,,,,,,,,,
-Belle,2015,US,Yes,Belle_2015,Belle_2015_US,GPS,Massachusetts,Complete,2010,M,Adult,2015-09-15 18:00:00,2015-09-24 17:00:00,2015-09-15 18:00:00,2015-10-17 14:00:00,8.96,,,,,,,,,,
-Belle,2015,CAR,Yes,Belle_2015,Belle_2015_CAR,GPS,Massachusetts,Complete,2010,M,Adult,2015-09-24 17:00:00,2015-10-04 16:00:00,2015-09-15 18:00:00,2015-10-17 14:00:00,9.96,,,,,,,,,,
-Belle,2015,SCA,Yes,Belle_2015,Belle_2015_SCA,GPS,Massachusetts,Complete,2010,M,Adult,2015-10-04 16:00:00,2015-10-17 14:00:00,2015-09-15 18:00:00,2015-10-17 14:00:00,12.92,,,,,,,,,,
-Belle,2016,US,Yes,Belle_2016,Belle_2016_US,GPS,Massachusetts,Complete,2010,M,Adult,2016-09-21 17:00:00,2016-09-29 16:00:00,2016-09-21 17:00:00,2016-10-27 18:00:00,7.96,,,,,,,,,,
-Belle,2016,CAR,Yes,Belle_2016,Belle_2016_CAR,GPS,Massachusetts,Complete,2010,M,Adult,2016-09-29 16:00:00,2016-10-12 14:00:00,2016-09-21 17:00:00,2016-10-27 18:00:00,12.92,,,,,,,,,,
-Belle,2016,SCA,Yes,Belle_2016,Belle_2016_SCA,GPS,Massachusetts,Complete,2010,M,Adult,2016-10-12 14:00:00,2016-10-27 18:00:00,2016-09-21 17:00:00,2016-10-27 18:00:00,15.17,,,,,,,,,,
-Bergen,2013,US,No,Bergen_2013,Bergen_2013_US,GPS,New Hampshire,Complete,2013,M,Juvenile,2013-08-21 16:00:00,2013-10-04 17:00:00,2013-08-21 16:00:00,2013-11-22 20:00:00,44.04,,,,,,,,,,
-Bergen,2013,CAR,No,Bergen_2013,Bergen_2013_CAR,GPS,New Hampshire,Complete,2013,M,Juvenile,2013-10-04 17:00:00,2013-10-11 17:00:00,2013-08-21 16:00:00,2013-11-22 20:00:00,7,,,,,,,,,,
-Bergen,2013,SCA,No,Bergen_2013,Bergen_2013_SCA,GPS,New Hampshire,Complete,2013,M,Juvenile,2013-10-11 17:00:00,2013-11-22 20:00:00,2013-08-21 16:00:00,2013-11-22 20:00:00,42.13,,,,,,,,,,
-Buck,2009,US,Yes,Buck_2009,Buck_2009_US,GPS,South Carolina,Complete,2009,M,Juvenile,2009-08-05 16:00:00,2009-09-22 16:00:00,2009-08-05 16:00:00,2009-10-06 16:00:00,48,,,,,,,,,,
-Buck,2009,CAR,Yes,Buck_2009,Buck_2009_CAR,GPS,South Carolina,Complete,2009,M,Juvenile,2009-09-22 16:00:00,2009-10-04 20:00:00,2009-08-05 16:00:00,2009-10-06 16:00:00,12.17,,,,,,,,,,
-Buck,2009,SCA,Yes,Buck_2009,Buck_2009_SCA,GPS,South Carolina,Complete,2009,M,Juvenile,2009-10-04 20:00:00,2009-10-06 16:00:00,2009-08-05 16:00:00,2009-10-06 16:00:00,1.83,,,,,,,,,,Wintered near the Northern coast of S. Amer.
-Buck,2011,US,Yes,Buck_2011,Buck_2011_US,GPS,Pennsylvania,Complete,2009,M,Adult,2011-10-01 17:00:00,2011-10-03 18:00:00,2011-10-01 17:00:00,2011-11-17 19:00:00,2.04,,,,,,,,,,Crazy exploration during stationary summer period
-Buck,2011,CAR,Yes,Buck_2011,Buck_2011_CAR,GPS,Pennsylvania,Complete,2009,M,Adult,2011-10-03 18:00:00,2011-11-16 15:00:00,2011-10-01 17:00:00,2011-11-17 19:00:00,43.88,,,,,,,,,,Crazy exploration during stationary summer period
-Buck,2011,SCA,Yes,Buck_2011,Buck_2011_SCA,GPS,Pennsylvania,Complete,2009,M,Adult,2011-11-16 15:00:00,2011-11-17 19:00:00,2011-10-01 17:00:00,2011-11-17 19:00:00,1.17,,,,,,,,,,Crazy exploration during stationary summer period
-Caley,2009,US,No,Caley_2009,Caley_2009_US,GPS,Massachusetts,Complete,2009,F,Juvenile,2009-09-19 13:00:00,2009-09-21 13:00:00,2009-09-19 13:00:00,2009-11-30 23:00:00,2,,,,,,,,,,Travelled over Atlantic during first segment
-Caley,2009,CAR,No,Caley_2009,Caley_2009_CAR,GPS,Massachusetts,Complete,2009,F,Juvenile,2009-09-21 13:00:00,2009-11-12 12:00:00,2009-09-19 13:00:00,2009-11-30 23:00:00,51.96,,,,,,,,,,
-Caley,2009,SCA,No,Caley_2009,Caley_2009_SCA,GPS,Massachusetts,Complete,2009,F,Juvenile,2009-11-12 12:00:00,2009-11-30 23:00:00,2009-09-19 13:00:00,2009-11-30 23:00:00,18.46,,,,,,,,,,
-Charlie,2014,US,Yes,Charlie_2014,Charlie_2014_US,GSM/GPS,Connecticut,Complete,2010,M,Adult,2014-09-12 13:39:00,2014-09-19 19:56:00,2014-09-12 13:39:00,2014-10-05 17:50:00,7.262453704,,,,,,,,,,
-Charlie,2014,CAR,Yes,Charlie_2014,Charlie_2014_CAR,GSM/GPS,Connecticut,Complete,2010,M,Adult,2014-09-19 19:56:00,2014-10-04 10:53:00,2014-09-12 13:39:00,2014-10-05 17:50:00,14.62278935,,,,,,,,,,
-Charlie,2014,SCA,Yes,Charlie_2014,Charlie_2014_SCA,GSM/GPS,Connecticut,Complete,2010,M,Adult,2014-10-04 10:53:00,2014-10-05 17:50:00,2014-09-12 13:39:00,2014-10-05 17:50:00,1.2890625,,,,,,,,,,
-Charlie,2015,US,Yes,Charlie_2015,Charlie_2015_US,GSM/GPS,Connecticut,Incomplete,2010,M,Adult,2015-09-20 13:58:00,2015-09-26 14:39:00,2015-09-20 13:58:00,2015-12-19 17:29:00,6.03,,,,,,,,,,"Was still in CAR well after he should have arrived in SCA, moving very slowly and did not form a cohesive home range. "
-Clyde,2014,US,No,Clyde_2014,Clyde_2014_US,GPS,New York,Complete,2014,M,Juvenile,2014-09-12 17:00:00,2014-09-17 13:00:00,2014-09-12 17:00:00,2014-11-16 12:00:00,4.83,,,,,,,,,,Travelled over Atlantic during first segment
-Clyde,2014,CAR,No,Clyde_2014,Clyde_2014_CAR,GPS,New York,Complete,2014,M,Juvenile,2014-09-17 13:00:00,2014-09-20 13:00:00,2014-09-12 17:00:00,2014-11-16 12:00:00,3,,,,,,,,,,Travelled over Atlantic during first segment
-Clyde,2014,SCA,No,Clyde_2014,Clyde_2014_SCA,GPS,New York,Complete,2014,M,Juvenile,2014-09-20 13:00:00,2014-11-16 12:00:00,2014-09-12 17:00:00,2014-11-16 12:00:00,56.96,,,,,,,,,,Travelled over Atlantic during first segment
-Crabby,2014,US,No,Crabby_2014,Crabby_2014_US,GSM/GPS,Maryland,Complete,2010,F,Adult,2014-08-25 15:06:00,2014-08-30 19:17:00,2014-08-25 15:06:00,2014-10-06 16:38:00,5.17,,,,,,,,,,
-Crabby,2014,CAR,No,Crabby_2014,Crabby_2014_CAR,GSM/GPS,Maryland,Complete,2010,F,Adult,2014-08-30 19:17:00,2014-09-09 11:25:00,2014-08-25 15:06:00,2014-10-06 16:38:00,9.67,,,,,,,,,,
-Crabby,2014,SCA,No,Crabby_2014,Crabby_2014_SCA,GSM/GPS,Maryland,Complete,2010,F,Adult,2014-09-09 11:25:00,2014-10-06 16:38:00,2014-08-25 15:06:00,2014-10-06 16:38:00,27.22,,,,,,,,,,
-Cutch,2012,US,No,Cutch_2012,Cutch_2012_US,GPS,Connecticut,Incomplete,2010,M,Adult,2012-09-10 17:00:00,2012-09-19 16:00:00,2012-09-10 17:00:00,2012-09-27 22:00:00,8.96,,,,,,,,,,
-Cutch,2012,CAR,No,Cutch_2012,Cutch_2012_CAR,GPS,Connecticut,Incomplete,2010,M,Adult,2012-09-19 16:00:00,2012-09-27 19:00:00,2012-09-10 17:00:00,2012-09-27 19:00:00,8.13,,,,,,,,,,
-Daphne,2016,US,No,Daphne_2016,Daphne_2016_US,GPS,Newfoundland,Complete,2013,F,Adult,2016-09-02 14:00:00,2016-10-05 20:00:00,2016-09-02 14:00:00,2016-10-17 20:00:00,33.25,,,,,,,,,,Wintered in Central Amer.
-Daphne,2016,CAR,No,Daphne_2016,Daphne_2016_CAR,GPS,Newfoundland,Complete,2013,F,Adult,2016-10-05 20:00:00,2016-10-08 14:00:00,2016-09-02 14:00:00,2016-10-17 20:00:00,2.75,,,,,,,,,,Wintered in Central Amer.
-Daphne,2016,SCA,No,Daphne_2016,Daphne_2016_SCA,GPS,Newfoundland,Complete,2013,F,Adult,2016-10-08 14:00:00,2016-10-17 20:00:00,2016-09-02 14:00:00,2016-10-17 20:00:00,9.25,,,,,,,,,,Wintered in Central Amer.
-DJ,2013,US,Yes,DJ_2013,DJ_2013_US,GSM/GPS,Massachusetts,Complete,2008,M,Adult,2013-09-17 10:52:00,2013-09-21 14:50:00,2013-09-17 10:52:00,2013-10-06 14:27:00,4.17,,,,,,,,,,
-DJ,2013,CAR,Yes,DJ_2013,DJ_2013_CAR,GSM/GPS,Massachusetts,Complete,2008,M,Adult,2013-09-21 14:50:00,2013-09-28 10:32:00,2013-09-17 10:52:00,2013-10-06 14:27:00,6.82,,,,,,,,,,
-DJ,2013,SCA,Yes,DJ_2013,DJ_2013_SCA,GSM/GPS,Massachusetts,Complete,2008,M,Adult,2013-09-28 10:32:00,2013-10-06 14:27:00,2013-09-17 10:52:00,2013-10-06 14:27:00,8.16,,,,,,,,,,
-DJ,2014,US,Yes,DJ_2014,DJ_2014_US,GSM/GPS,Massachusetts,Incomplete,2008,M,Adult,2014-10-02 17:48:00,2014-10-18 17:46:00,2014-10-02 17:48:00,2014-11-16 16:31:00,16,,,,,,,,,,
-Donovan,2013,US,Yes,Donovan_2013,Donovan_2013_US,GPS,New Hampshire,Complete,2009,M,Adult,2013-09-17 19:00:00,2013-09-27 01:00:00,2013-09-17 19:00:00,2013-10-20 19:00:00,9.25,,,,,,,,,,
-Donovan,2013,CAR,Yes,Donovan_2013,Donovan_2013_CAR,GPS,New Hampshire,Complete,2009,M,Adult,2013-09-27 01:00:00,2013-10-18 20:00:00,2013-09-17 19:00:00,2013-10-20 19:00:00,21.79,,,,,,,,,,
-Donovan,2013,SCA,Yes,Donovan_2013,Donovan_2013_SCA,GPS,New Hampshire,Complete,2009,M,Adult,2013-10-18 20:00:00,2013-10-20 19:00:00,2013-09-17 19:00:00,2013-10-20 19:00:00,1.96,,,,,,,,,,
-Donovan,2014,US,Yes,Donovan_2014,Donovan_2014_US,GPS,New Hampshire,Complete,2009,M,Adult,2014-09-18 17:00:00,2014-09-26 16:00:00,2014-09-18 17:00:00,2014-10-12 17:00:00,7.96,,,,,,,,,,
-Donovan,2014,CAR,Yes,Donovan_2014,Donovan_2014_CAR,GPS,New Hampshire,Complete,2009,M,Adult,2014-09-26 16:00:00,2014-10-09 15:00:00,2014-09-18 17:00:00,2014-10-12 17:00:00,12.96,,,,,,,,,,
-Donovan,2014,SCA,Yes,Donovan_2014,Donovan_2014_SCA,GPS,New Hampshire,Complete,2009,M,Adult,2014-10-09 15:00:00,2014-10-12 17:00:00,2014-09-18 17:00:00,2014-10-12 17:00:00,3.08,,,,,,,,,,
-Donovan,2015,US,Yes,Donovan_2015,Donovan_2015_US,GPS,New Hampshire,Complete,2009,M,Adult,2015-09-20 13:00:00,2015-09-25 20:00:00,2015-09-20 13:00:00,2015-10-12 15:00:00,5.29,,,,,,,,,,
-Donovan,2015,CAR,Yes,Donovan_2015,Donovan_2015_CAR,GPS,New Hampshire,Complete,2009,M,Adult,2015-09-25 20:00:00,2015-10-09 18:00:00,2015-09-20 13:00:00,2015-10-12 15:00:00,13.92,,,,,,,,,,
-Donovan,2015,SCA,Yes,Donovan_2015,Donovan_2015_SCA,GPS,New Hampshire,Complete,2009,M,Adult,2015-10-09 18:00:00,2015-10-12 15:00:00,2015-09-20 13:00:00,2015-10-12 15:00:00,2.88,,,,,,,,,,
-Duke,2008,US,No,Duke_2008,Duke_2008_US,GPS,South Carolina,Incomplete,2008,M,Juvenile,2008-07-28 18:00:00,2008-09-05 17:00:00,2008-07-28 18:00:00,2008-09-09 21:00:00,38.96,,,,,,,,,,
-Duke,2008,CAR,No,Duke_2008,Duke_2008_CAR,GPS,South Carolina,Incomplete,2008,M,Juvenile,2008-09-05 17:00:00,2008-09-09 21:00:00,2008-07-28 18:00:00,2008-09-09 21:00:00,4.17,,,,,,,,,,
-Edwin,2013,US,Yes,Edwin_2013,Edwin_2013_US,GSM/GPS,Connecticut,Complete,2008,M,Adult,2013-08-16 16:03:00,2013-08-26 21:51:00,2013-08-16 16:03:00,2013-10-06 13:45:00,10.24,,,,,,,,,,
-Edwin,2013,CAR,Yes,Edwin_2013,Edwin_2013_CAR,GSM/GPS,Connecticut,Complete,2008,M,Adult,2013-08-26 21:51:00,2013-09-18 14:03:00,2013-08-16 16:03:00,2013-10-06 13:45:00,22.68,,,,,,,,,,
-Edwin,2013,SCA,Yes,Edwin_2013,Edwin_2013_SCA,GSM/GPS,Connecticut,Complete,2008,M,Adult,2013-09-18 14:03:00,2013-10-06 13:45:00,2013-08-16 16:03:00,2013-10-06 13:45:00,17.99,,,,,,,,,,
-Edwin,2014,US,Yes,Edwin_2014,Edwin_2014_US,GSM/GPS,Connecticut,Complete,2008,M,Adult,2014-08-18 13:44:00,2014-08-24 16:54:00,2014-08-18 13:44:00,2014-09-10 16:58:00,6.13,,,,,,,,,,
-Edwin,2014,CAR,Yes,Edwin_2014,Edwin_2014_CAR,GSM/GPS,Connecticut,Complete,2008,M,Adult,2014-08-24 16:54:00,2014-08-31 08:20:00,2014-08-18 13:44:00,2014-09-10 16:58:00,6.64,,,,,,,,,,
-Edwin,2014,SCA,Yes,Edwin_2014,Edwin_2014_SCA,GSM/GPS,Connecticut,Complete,2008,M,Adult,2014-08-31 08:20:00,2014-09-10 16:58:00,2014-08-18 13:44:00,2014-09-10 16:58:00,10.36,,,,,,,,,,
-Edwin,2015,US,Yes,Edwin_2015,Edwin_2015_US,GSM/GPS,Connecticut,Complete,2008,M,Adult,2015-08-16 15:03:00,2015-08-24 15:48:00,2015-08-16 15:03:00,2015-09-11 18:57:00,8.03,,,,,,,,,,
-Edwin,2015,CAR,Yes,Edwin_2015,Edwin_2015_CAR,GSM/GPS,Connecticut,Complete,2008,M,Adult,2015-08-24 15:48:00,2015-08-24 22:31:00,2015-08-16 15:03:00,2015-09-11 18:57:00,0.28,,,,,,,,,,
-Edwin,2015,SCA,Yes,Edwin_2015,Edwin_2015_SCA,GSM/GPS,Connecticut,Complete,2008,M,Adult,2015-08-24 22:31:00,2015-09-11 18:57:00,2015-08-16 15:03:00,2015-09-11 18:57:00,17.85,,,,,,,,,,
-Flow,2014,US,Yes,Flow_2014,Flow_2014_US,GPS,Massachusetts,Complete,2014,M,Juvenile,2014-08-20 21:00:00,2014-10-22 13:00:00,2014-08-20 21:00:00,2014-10-26 16:00:00,62.67,,,,,,,,,,Wintered in CAR
-Flow,2014,CAR,Yes,Flow_2014,Flow_2014_CAR,GPS,Massachusetts,Complete,2014,M,Juvenile,2014-10-22 13:00:00,2014-10-26 16:00:00,2014-08-20 21:00:00,2014-10-26 16:00:00,4.13,,,,,,,,,,Wintered in CAR
-Flow,2016,US,Yes,Flow_2016,Flow_2016_US,GPS,Massachusetts,Complete,2014,M,Adult,2016-09-29 14:00:00,2016-10-06 16:00:00,2016-09-29 14:00:00,2016-10-08 15:00:00,7.08,,,,,,,,,,Wintered in CAR
-Flow,2016,CAR,Yes,Flow_2016,Flow_2016_CAR,GPS,Massachusetts,Complete,2014,M,Adult,2016-10-06 16:00:00,2016-10-08 15:00:00,2016-09-29 14:00:00,2016-10-08 15:00:00,1.96,,,,,,,,,,Wintered in CAR
-Goody,2008,US,No,Goody_2008,Goody_2008_US,GPS,Massachusetts,Incomplete,2008,F,Juvenile,2008-10-15 19:00:00,2008-10-20 14:00:00,2008-10-15 19:00:00,2008-12-14 20:00:00,4.79,,,,,,,,,,Travelled over Atlantic during first segment
-Goody,2008,CAR,No,Goody_2008,Goody_2008_CAR,GPS,Massachusetts,Incomplete,2008,F,Juvenile,2008-10-20 14:00:00,2008-10-29 20:00:00,2008-10-15 19:00:00,2008-12-14 20:00:00,9.25,,,,,,,,,,Travelled over Atlantic during first segment
-Gundersen,2015,US,No,Gundersen_2015,Gundersen_2015_US,GPS,New Hampshire,Complete,2011,M,Adult,2015-09-07 15:00:00,2015-09-19 17:00:00,2015-09-07 15:00:00,2015-10-04 16:00:00,12.08,,,,,,,,,,
-Gundersen,2015,CAR,No,Gundersen_2015,Gundersen_2015_CAR,GPS,New Hampshire,Complete,2011,M,Adult,2015-09-19 17:00:00,2015-10-02 22:00:00,2015-09-07 15:00:00,2015-10-04 16:00:00,13.21,,,,,,,,,,
-Gundersen,2015,SCA,No,Gundersen_2015,Gundersen_2015_SCA,GPS,New Hampshire,Complete,2011,M,Adult,2015-10-02 22:00:00,2015-10-04 16:00:00,2015-09-07 15:00:00,2015-10-04 16:00:00,1.75,,,,,,,,,,
-Hackett,2016,US,No,Hackett_2016,Hackett_2016_US,GSM/GPS,Maryland,Complete,2014,M,Adult,2016-08-27 14:14:00,2016-09-03 21:42:00,2016-08-27 14:14:00,2016-09-15 13:28:00,18.96798611,,,,,,,,,,
-Hackett,2016,CAR,No,Hackett_2016,Hackett_2016_CAR,GSM/GPS,Maryland,Complete,2014,M,Adult,2016-09-03 21:42:00,2016-09-10 05:43:00,2016-08-27 14:14:00,2016-09-15 13:28:00,18.96798611,,,,,,,,,,
-Hackett,2016,SCA,No,Hackett_2016,Hackett_2016_SCA,GSM/GPS,Maryland,Complete,2014,M,Adult,2016-09-10 05:43:00,2016-09-15 13:28:00,2016-08-27 14:14:00,2016-09-15 13:28:00,18.96798611,,,,,,,,,,
-Henrietta,2011,US,No,Henrietta_2011,Henrietta_2011_US,GPS,Massachusetts,Complete,2011,F,Juvenile,2011-09-16 13:00:00,2011-09-18 15:00:00,2011-09-16 13:00:00,2011-09-26 13:00:00,2.08,,,,,,,,,,Travelled over Atlantic during first segment
-Henrietta,2011,CAR,No,Henrietta_2011,Henrietta_2011_CAR,GPS,Massachusetts,Complete,2011,F,Juvenile,2011-09-18 15:00:00,2011-09-26 13:00:00,2011-09-16 13:00:00,2011-09-26 13:00:00,7.92,,,,,,,,,,Travelled over Atlantic during first segment
-Henrietta,2011,SCA,No,Henrietta_2011,Henrietta_2011_SCA,GPS,Massachusetts,Complete,2011,F,Juvenile,2011-09-26 13:00:00,2011-09-26 14:00:00,2011-09-16 13:00:00,2011-09-26 14:00:00,0.04,,,,,,,,,,Travelled over Atlantic during first segment; long enough to analyze?
-Holly,2016,US,Yes,Holly_2016,Holly_2016_US,GSM/GPS,Maryland,Complete,2014,F,Adult,2016-08-29 16:03:00,2016-09-06 17:36:00,2016-08-29 16:03:00,2016-10-12 18:42:00,8.06,,,,,,,,,,
-Holly,2016,CAR,Yes,Holly_2016,Holly_2016_CAR,GSM/GPS,Maryland,Complete,2014,F,Adult,2016-09-06 17:36:00,2016-09-13 18:53:00,2016-08-29 16:03:00,2016-10-12 18:42:00,7.05,,,,,,,,,,
-Holly,2016,SCA,Yes,Holly_2016,Holly_2016_SCA,GSM/GPS,Maryland,Complete,2014,F,Adult,2016-09-13 18:53:00,2016-10-12 18:42:00,2016-08-29 16:03:00,2016-10-12 18:42:00,28.99,,,,,,,,,,
-Holly,2017,US,Yes,Holly_2017,Holly_2017_US,GSM/GPS,Maryland,Complete,2014,F,Adult,2017-08-28 15:32:00,2017-09-07 21:36:00,2017-08-28 15:32:00,2017-11-10 18:53:00,10.25,,,,,,,,,,
-Holly,2017,CAR,Yes,Holly_2017,Holly_2017_CAR,GSM/GPS,Maryland,Complete,2014,F,Adult,2017-09-07 21:36:00,2017-09-30 18:53:00,2017-08-28 15:32:00,2017-11-10 18:53:00,22.89,,,,,,,,,,
-Holly,2017,SCA,Yes,Holly_2017,Holly_2017_SCA,GSM/GPS,Maryland,Complete,2014,F,Adult,2017-09-30 18:53:00,2017-11-10 18:53:00,2017-08-28 15:32:00,2017-11-10 18:53:00,41,,,,,,,,,,
-Holly,2018,US,Yes,Holly_2018,Holly_2018_US,GSM/GPS,Maryland,Complete,2014,F,Adult,2018-08-23 12:42:00,2018-08-27 21:48:00,2018-08-23 12:42:00,2018-10-20 16:41:00,4.38,,,,,,,,,,
-Holly,2018,CAR,Yes,Holly_2018,Holly_2018_CAR,GSM/GPS,Maryland,Complete,2014,F,Adult,2018-08-27 21:48:00,2018-09-09 10:56:00,2018-08-23 12:42:00,2018-10-20 16:41:00,12.55,,,,,,,,,,
-Holly,2018,SCA,Yes,Holly_2018,Holly_2018_SCA,GSM/GPS,Maryland,Complete,2014,F,Adult,2018-09-09 10:56:00,2018-10-20 16:41:00,2018-08-23 12:42:00,2018-10-20 16:41:00,41.24,,,,,,,,,,
-Holly,2019,US,Yes,Holly_2019,Holly_2019_US,GSM/GPS,Maryland,Incomplete,2014,F,Adult,2019-09-01 14:23:00,2019-09-06 21:27:00,2019-09-01 14:23:00,2019-10-17 19:50:00,5.29,,,,,,,,,,"Left CAR, but doubled back to islands and stayed until signal was lost. "
-Hudson,2009,US,No,Hudson_2009,Hudson_2009_US,GPS,Rhode Island,Complete,2006,M,Adult,2009-09-24 19:00:00,2009-09-29 20:00:00,2009-09-24 19:00:00,2009-10-13 02:00:00,5.04,,,,,,,,,,
-Hudson,2009,CAR,No,Hudson_2009,Hudson_2009_CAR,GPS,Rhode Island,Complete,2006,M,Adult,2009-09-29 20:00:00,2009-10-07 16:00:00,2009-09-24 19:00:00,2009-10-13 02:00:00,7.83,,,,,,,,,,Left mainland before reaching Florida
-Hudson,2009,SCA,No,Hudson_2009,Hudson_2009_SCA,GPS,Rhode Island,Complete,2006,M,Adult,2009-10-07 16:00:00,2009-10-13 02:00:00,2009-09-24 19:00:00,2009-10-13 02:00:00,5.42,,,,,,,,,,
-Icarius,2013,US,No,Icarius_2013,Icarius_2013_US,GSM/GPS,Massachusetts,Complete,2008,M,Adult,2013-09-17 11:55:00,2013-09-20 20:38:00,2013-09-17 11:55:00,2013-10-10 18:14:00,3.36,,,,,,,,,,
-Icarius,2013,CAR,No,Icarius_2013,Icarius_2013_CAR,GSM/GPS,Massachusetts,Complete,2008,M,Adult,2013-09-20 20:38:00,2013-09-27 11:43:00,2013-09-17 11:55:00,2013-10-10 18:14:00,6.63,,,,,,,,,,
-Icarius,2013,SCA,No,Icarius_2013,Icarius_2013_SCA,GSM/GPS,Massachusetts,Complete,2008,M,Adult,2013-09-27 11:43:00,2013-10-10 18:14:00,2013-09-17 11:55:00,2013-10-10 18:14:00,13.27,,,,,,,,,,
-Isabel,2009,US,No,Isabel_2009,Isabel_2009_US,GPS,Massachusetts,Incomplete,2009,F,Juvenile,2009-09-05 17:00:00,2009-09-08 13:00:00,2009-09-05 17:00:00,2009-09-20 23:00:00,2.83,,,,,,,,,,Travelled over Atlantic during first segment
-Isabel,2009,CAR,No,Isabel_2009,Isabel_2009_CAR,GPS,Massachusetts,Incomplete,2009,F,Juvenile,2009-09-08 13:00:00,2009-09-14 20:00:00,2009-09-05 17:00:00,2009-09-20 23:00:00,6.29,,,,,,,,,,Travelled over Atlantic during first segment
-Jill,2012,US,No,Jill_2012,Jill_2012_US,GPS,New Hampshire,Incomplete,2012,F,Juvenile,2012-09-10 14:00:00,2012-09-19 19:00:00,2012-09-10 14:00:00,2012-10-04 18:00:00,9.21,,,,,,,,,,
-Jill,2012,CAR,No,Jill_2012,Jill_2012_CAR,GPS,New Hampshire,Incomplete,2012,F,Juvenile,2012-09-19 19:00:00,2012-09-26 13:00:00,2012-09-10 14:00:00,2012-10-04 18:00:00,6.75,,,,,,,,,,
-Juliet,2015,US,No,Juliet_2015,Juliet_2015_US,GPS,New Hampshire,Complete,2015,Unkown,Juvenile,2015-09-03 19:00:00,2015-09-19 17:00:00,2015-09-03 19:00:00,2015-10-02 15:00:00,15.92,,,,,,,,,,
-Juliet,2015,CAR,No,Juliet_2015,Juliet_2015_CAR,GPS,New Hampshire,Complete,2015,Unkown,Juvenile,2015-09-19 17:00:00,2015-09-27 14:00:00,2015-09-03 19:00:00,2015-10-02 15:00:00,7.88,,,,,,,,,,
-Juliet,2015,SCA,No,Juliet_2015,Juliet_2015_SCA,GPS,New Hampshire,Complete,2015,Unkown,Juvenile,2015-09-27 14:00:00,2015-10-02 15:00:00,2015-09-03 19:00:00,2015-10-02 15:00:00,5.04,,,,,,,,,,
-Leif,2016,US,No,Leif_2016,Leif_2016_US,GPS,Newfoundland,Complete,2016,M,Juvenile,2016-09-15 13:00:00,2016-11-16 20:00:00,2016-09-15 13:00:00,2016-11-26 18:00:00,62.29,,,,,,,,,,Wintered in CAR
-Leif,2016,CAR,No,Leif_2016,Leif_2016_CAR,GPS,Newfoundland,Complete,2016,M,Juvenile,2016-11-16 20:00:00,2016-11-26 18:00:00,2016-09-15 13:00:00,2016-11-26 18:00:00,9.92,,,,,,,,,,Wintered in CAR
-Meadow,2008,US,No,Meadow_2008,Meadow_2008_US,GPS,Massachusetts,Complete,2008,Unkown,Juvenile,2008-08-17 15:00:00,2008-12-07 13:00:00,2008-08-17 15:00:00,2008-12-14 16:00:00,111.92,,,,,,,,,,Spent time at the Great Lakes during migration; Wintered in CAR
-Meadow,2008,CAR,No,Meadow_2008,Meadow_2008_CAR,GPS,Massachusetts,Complete,2008,Unkown,Juvenile,2008-12-07 13:00:00,2008-12-14 16:00:00,2008-08-17 15:00:00,2008-12-14 16:00:00,7.13,,,,,,,,,,Spent time at the Great Lakes during migration; Wintered in CAR
-Mittark,2008,US,No,Mittark_2008,Mittark_2008_US,GPS,Massachusetts,Complete,2008,Unkown,Juvenile,2008-10-06 16:00:00,2008-10-10 16:00:00,2008-10-06 16:00:00,2008-10-20 19:00:00,4,,,,,,,,,,Wintered in CAR; Travelled over Atlantic during first segment and Florida
-Mittark,2008,CAR,No,Mittark_2008,Mittark_2008_CAR,GPS,Massachusetts,Complete,2008,Unkown,Juvenile,2008-10-10 16:00:00,2008-10-20 19:00:00,2008-10-06 16:00:00,2008-10-20 19:00:00,10.13,,,,,,,,,,Wintered in CAR; Travelled over Atlantic during first segment and Florida
-Moffet,2009,US,No,Moffet_2009,Moffet_2009_US,GPS,Massachusetts,Complete,2009,Unkown,Juvenile,2009-10-08 16:00:00,2009-10-11 01:00:00,2009-10-08 16:00:00,2009-10-14 15:00:00,2.38,,,,,,,,,,Wintered in CAR; Travelled over Atlantic during first segment
-Moffet,2009,CAR,No,Moffet_2009,Moffet_2009_CAR,GPS,Massachusetts,Complete,2009,Unkown,Juvenile,2009-10-11 01:00:00,2009-10-14 15:00:00,2009-10-08 16:00:00,2009-10-14 15:00:00,3.58,,,,,,,,,,Wintered in CAR; Travelled over Atlantic during first segment
-Mr__Hannah,2009,US,Yes,Mr__Hannah_2009,Mr__Hannah_2009_US,GPS,Massachusetts,Complete,2006,M,Adult,2009-09-06 16:00:00,2009-09-06 16:00:00,2009-09-06 16:00:00,2009-10-10 01:00:00,0,,,,,,,,,,
-Mr__Hannah,2009,CAR,Yes,Mr__Hannah_2009,Mr__Hannah_2009_CAR,GPS,Massachusetts,Complete,2006,M,Adult,2009-09-06 16:00:00,2009-09-17 14:00:00,2009-09-06 16:00:00,2009-10-10 01:00:00,10.92,,,,,,,,,,
-Mr__Hannah,2009,SCA,Yes,Mr__Hannah_2009,Mr__Hannah_2009_SCA,GPS,Massachusetts,Complete,2006,M,Adult,2009-09-17 14:00:00,2009-10-10 01:00:00,2009-09-06 16:00:00,2009-10-10 01:00:00,22.46,,,,,,,,,,
-Mr__Hannah,2010,US,Yes,Mr__Hannah_2010,Mr__Hannah_2010_US,GPS,Massachusetts,Incomplete,2006,M,Adult,2010-09-15 19:00:00,2010-09-21 15:00:00,2010-09-15 19:00:00,2010-10-08 23:00:00,5.83,,,,,,,,,,
-Nick,2013,US,Yes,Nick_2013,Nick_2013_US,GSM/GPS,Maryland,Complete,2008,M,Adult,2013-09-13 12:26:00,2013-09-17 18:23:00,2013-09-13 12:26:00,2013-09-28 01:50:00,4.25,,,,,,,,,,
-Nick,2013,CAR,Yes,Nick_2013,Nick_2013_CAR,GSM/GPS,Maryland,Complete,2008,M,Adult,2013-09-17 18:23:00,2013-09-26 14:53:00,2013-09-13 12:26:00,2013-09-28 01:50:00,8.85,,,,,,,,,,
-Nick,2013,SCA,Yes,Nick_2013,Nick_2013_SCA,GSM/GPS,Maryland,Complete,2008,M,Adult,2013-09-26 14:53:00,2013-09-28 01:50:00,2013-09-13 12:26:00,2013-09-28 01:50:00,1.46,,,,,,,,,,
-Nick,2014,US,Yes,Nick_2014,Nick_2014_US,GSM/GPS,Maryland,Complete,2008,M,Adult,2014-09-18 15:21:00,2014-09-24 20:59:00,2014-09-18 15:21:00,2014-10-02 18:13:00,6.23,,,,,,,,,,
-Nick,2014,CAR,Yes,Nick_2014,Nick_2014_CAR,GSM/GPS,Maryland,Complete,2008,M,Adult,2014-09-24 20:59:00,2014-10-01 17:51:00,2014-09-18 15:21:00,2014-10-02 18:13:00,6.87,,,,,,,,,,
-Nick,2014,SCA,Yes,Nick_2014,Nick_2014_SCA,GSM/GPS,Maryland,Complete,2008,M,Adult,2014-10-01 17:51:00,2014-10-02 18:13:00,2014-09-18 15:21:00,2014-10-02 18:13:00,1.02,,,,,,,,,,
-Nick,2015,US,Yes,Nick_2015,Nick_2015_US,GSM/GPS,Maryland,Complete,2008,M,Adult,2015-09-18 13:30:00,2015-09-22 14:20:00,2015-09-18 13:30:00,2015-09-28 20:24:00,4.03,,,,,,,,,,
-Nick,2015,CAR,Yes,Nick_2015,Nick_2015_CAR,GSM/GPS,Maryland,Complete,2008,M,Adult,2015-09-22 14:20:00,2015-09-28 11:09:00,2015-09-18 13:30:00,2015-09-28 20:24:00,5.87,,,,,,,,,,
-Nick,2015,SCA,Yes,Nick_2015,Nick_2015_SCA,GSM/GPS,Maryland,Complete,2008,M,Adult,2015-09-28 11:09:00,2015-09-28 20:24:00,2015-09-18 13:30:00,2015-09-28 20:24:00,0.39,,,,,,,,,,
-Nick,2016,US,Yes,Nick_2016,Nick_2016_US,GSM/GPS,Maryland,Complete,2008,M,Adult,2016-09-29 13:01:00,2016-10-06 13:52:00,2016-09-29 13:01:00,2016-10-12 21:40:00,7.04,,,,,,,,,,
-Nick,2016,CAR,Yes,Nick_2016,Nick_2016_CAR,GSM/GPS,Maryland,Complete,2008,M,Adult,2016-10-06 13:52:00,2016-10-11 15:49:00,2016-09-29 13:01:00,2016-10-12 21:40:00,5.08,,,,,,,,,,
-Nick,2016,SCA,Yes,Nick_2016,Nick_2016_SCA,GSM/GPS,Maryland,Complete,2008,M,Adult,2016-10-11 15:49:00,2016-10-12 21:40:00,2016-09-29 13:01:00,2016-10-12 21:40:00,1.24,,,,,,,,,,
-North_Fork_Bob,2010,US,Yes,North_Fork_Bob_2010,North_Fork_Bob_2010_US,GPS,Connecticut,Complete,2008,M,Adult,2010-09-19 18:00:00,2010-09-27 18:00:00,2010-09-19 18:00:00,2010-11-03 17:00:00,8,,,,,,,,,,
-North_Fork_Bob,2010,CAR,Yes,North_Fork_Bob_2010,North_Fork_Bob_2010_CAR,GPS,Connecticut,Complete,2008,M,Adult,2010-09-27 18:00:00,2010-10-09 18:00:00,2010-09-19 18:00:00,2010-11-03 17:00:00,12,,,,,,,,,,
-North_Fork_Bob,2010,SCA,Yes,North_Fork_Bob_2010,North_Fork_Bob_2010_SCA,GPS,Connecticut,Complete,2008,M,Adult,2010-10-09 18:00:00,2010-11-03 17:00:00,2010-09-19 18:00:00,2010-11-03 17:00:00,24.96,,,,,,,,,,
-North_Fork_Bob,2011,US,Yes,North_Fork_Bob_2011,North_Fork_Bob_2011_US,GPS,Connecticut,Complete,2008,M,Adult,2011-10-03 17:00:00,2011-10-08 23:00:00,2011-10-03 17:00:00,2011-11-09 16:00:00,5.25,,,,,,,,,,
-North_Fork_Bob,2011,CAR,Yes,North_Fork_Bob_2011,North_Fork_Bob_2011_CAR,GPS,Connecticut,Complete,2008,M,Adult,2011-10-08 23:00:00,2011-10-27 23:00:00,2011-10-03 17:00:00,2011-11-09 16:00:00,19,,,,,,,,,,
-North_Fork_Bob,2011,SCA,Yes,North_Fork_Bob_2011,North_Fork_Bob_2011_SCA,GPS,Connecticut,Complete,2008,M,Adult,2011-10-27 23:00:00,2011-11-09 16:00:00,2011-10-03 17:00:00,2011-11-09 16:00:00,12.71,,,,,,,,,,
-North_Fork_Bob,2012,US,Yes,North_Fork_Bob_2012,North_Fork_Bob_2012_US,GPS,Connecticut,Complete,2008,M,Adult,2012-09-30 15:00:00,2012-10-11 22:00:00,2012-09-30 15:00:00,2012-11-28 13:00:00,11.29,,,,,,,,,,
-North_Fork_Bob,2012,CAR,Yes,North_Fork_Bob_2012,North_Fork_Bob_2012_CAR,GPS,Connecticut,Complete,2008,M,Adult,2012-10-11 22:00:00,2012-11-10 15:00:00,2012-09-30 15:00:00,2012-11-28 13:00:00,29.71,,,,,,,,,,
-North_Fork_Bob,2012,SCA,Yes,North_Fork_Bob_2012,North_Fork_Bob_2012_SCA,GPS,Connecticut,Complete,2008,M,Adult,2012-11-10 15:00:00,2012-11-28 13:00:00,2012-09-30 15:00:00,2012-11-28 13:00:00,17.92,,,,,,,,,,
-North_Fork_Bob,2013,US,Yes,North_Fork_Bob_2013,North_Fork_Bob_2013_US,GPS,Connecticut,Complete,2008,M,Adult,2013-09-24 21:00:00,2013-09-27 18:00:00,2013-09-24 21:00:00,2013-11-05 15:00:00,2.88,,,,,,,,,,Travelled over Atlantic during first segment
-North_Fork_Bob,2013,CAR,Yes,North_Fork_Bob_2013,North_Fork_Bob_2013_CAR,GPS,Connecticut,Complete,2008,M,Adult,2013-09-27 18:00:00,2013-10-20 13:00:00,2013-09-24 21:00:00,2013-11-05 15:00:00,22.79,,,,,,,,,,Travelled over Atlantic during first segment
-North_Fork_Bob,2013,SCA,Yes,North_Fork_Bob_2013,North_Fork_Bob_2013_SCA,GPS,Connecticut,Complete,2008,M,Adult,2013-10-20 13:00:00,2013-11-05 15:00:00,2013-09-24 21:00:00,2013-11-05 15:00:00,16.08,,,,,,,,,,Travelled over Atlantic during first segment
-North_Fork_Bob,2014,US,Yes,North_Fork_Bob_2014,North_Fork_Bob_2014_US,GPS,Connecticut,Complete,2008,M,Adult,2014-09-19 15:00:00,2014-09-27 17:00:00,2014-09-19 15:00:00,2014-10-12 20:00:00,8.08,,,,,,,,,,
-North_Fork_Bob,2014,CAR,Yes,North_Fork_Bob_2014,North_Fork_Bob_2014_CAR,GPS,Connecticut,Complete,2008,M,Adult,2014-09-27 17:00:00,2014-10-09 13:00:00,2014-09-19 15:00:00,2014-10-12 20:00:00,11.83,,,,,,,,,,
-North_Fork_Bob,2014,SCA,Yes,North_Fork_Bob_2014,North_Fork_Bob_2014_SCA,GPS,Connecticut,Complete,2008,M,Adult,2014-10-09 13:00:00,2014-10-12 20:00:00,2014-09-19 15:00:00,2014-10-12 20:00:00,3.29,,,,,,,,,,
-Ozzie,2009,US,No,Ozzie_2009,Ozzie_2009_US,GPS,Massachusetts,Complete,2006,M,Adult,2009-09-19 21:00:00,2009-10-04 16:00:00,2009-09-19 21:00:00,2009-10-05 20:00:00,14.79,,,,,,,,,,Wintered in CAR
-Ozzie,2009,CAR,No,Ozzie_2009,Ozzie_2009_CAR,GPS,Massachusetts,Complete,2006,M,Adult,2009-10-04 16:00:00,2009-10-05 20:00:00,2009-09-19 21:00:00,2009-10-05 20:00:00,1.17,,,,,,,,,,Wintered in CAR
-Penelope,2008,US,Yes,Penelope_2008,Penelope_2008_US,GPS,Massachusetts,Complete,2008,F,Juvenile,2008-09-08 19:00:00,2008-09-14 20:00:00,2008-09-08 19:00:00,2008-10-14 18:00:00,6.04,,,,,,,,,,Travelled over Atlantic during first segment
-Penelope,2008,CAR,Yes,Penelope_2008,Penelope_2008_CAR,GPS,Massachusetts,Complete,2008,F,Juvenile,2008-09-14 20:00:00,2008-09-21 17:00:00,2008-09-08 19:00:00,2008-10-14 18:00:00,6.88,,,,,,,,,,Travelled over Atlantic during first segment
-Penelope,2008,SCA,Yes,Penelope_2008,Penelope_2008_SCA,GPS,Massachusetts,Complete,2008,F,Juvenile,2008-09-21 17:00:00,2008-10-14 18:00:00,2008-09-08 19:00:00,2008-10-14 18:00:00,23.04,,,,,,,,,,Travelled over Atlantic during first segment
-Penelope,2010,US,Yes,Penelope_2010,Penelope_2010_US,GPS,Massachusetts,Incomplete,2008,F,Adult,2010-08-20 18:00:00,2010-09-02 21:00:00,2010-08-20 18:00:00,2010-10-02 23:00:00,13.13,,,,,,,,,,
-Quin,2013,US,Yes,Quin_2013,Quin_2013_US,GSM/GPS,Maryland,Complete,2008,M,Adult,2013-09-17 16:14:00,2013-09-20 14:56:00,2013-09-17 16:14:00,2013-09-22 16:55:00,2.95,,,,,,,,,,Wintered in CAR
-Quin,2013,CAR,Yes,Quin_2013,Quin_2013_CAR,GSM/GPS,Maryland,Complete,2008,M,Adult,2013-09-20 14:56:00,2013-09-22 16:55:00,2013-09-17 16:14:00,2013-09-22 16:55:00,2.08,,,,,,,,,,Wintered in CAR
-Quin,2014,US,Yes,Quin_2014,Quin_2014_US,GSM/GPS,Maryland,Complete,2008,M,Adult,2014-09-26 13:03:00,2014-10-01 19:28:00,2014-09-26 13:03:00,2014-10-03 14:08:00,5.27,,,,,,,,,,Wintered in CAR
-Quin,2014,CAR,Yes,Quin_2014,Quin_2014_CAR,GSM/GPS,Maryland,Complete,2008,M,Adult,2014-10-01 19:28:00,2014-10-03 14:08:00,2014-09-26 13:03:00,2014-10-03 14:08:00,1.78,,,,,,,,,,Wintered in CAR
-Quin,2015,US,Yes,Quin_2015,Quin_2015_US,GSM/GPS,Maryland,Incomplete,2008,M,Adult,2015-10-01 13:59:00,2015-10-08 20:03:00,2015-10-01 13:59:00,2015-10-08 20:55:00,7.25,,,,,,,,,,
-Rammie,2012,US,No,Rammie_2012,Rammie_2012_US,GSM/GPS,Massachusetts,Complete,2007,M,Adult,2012-09-20 15:49:00,2012-09-25 20:35:00,2012-09-20 15:49:00,2012-10-13 15:51:00,5.2,,,,,,,,,,
-Rammie,2012,CAR,No,Rammie_2012,Rammie_2012_CAR,GSM/GPS,Massachusetts,Complete,2007,M,Adult,2012-09-25 20:35:00,2012-10-10 10:08:00,2012-09-20 15:49:00,2012-10-13 15:51:00,14.56,,,,,,,,,,
-Rammie,2012,SCA,No,Rammie_2012,Rammie_2012_SCA,GSM/GPS,Massachusetts,Complete,2007,M,Adult,2012-10-10 10:08:00,2012-10-13 15:51:00,2012-09-20 15:49:00,2012-10-13 15:51:00,3.24,,,,,,,,,,
-Rodney,2013,US,Yes,Rodney_2013,Rodney_2013_US,GPS,Maryland,Complete,2010,M,Adult,2013-09-03 16:00:00,2013-09-09 04:00:00,2013-09-03 16:00:00,2013-10-09 15:00:00,5.5,,,,,,,,,,
-Rodney,2013,CAR,Yes,Rodney_2013,Rodney_2013_CAR,GPS,Maryland,Complete,2010,M,Adult,2013-09-09 04:00:00,2013-09-19 23:00:00,2013-09-03 16:00:00,2013-10-09 15:00:00,10.79,,,,,,,,,,
-Rodney,2013,SCA,Yes,Rodney_2013,Rodney_2013_SCA,GPS,Maryland,Complete,2010,M,Adult,2013-09-19 23:00:00,2013-10-09 15:00:00,2013-09-03 16:00:00,2013-10-09 15:00:00,19.67,,,,,,,,,,
-Ron,2013,US,Yes,Ron_2013,Ron_2013_US,GPS,Maryland,Complete,2010,M,Adult,2013-09-14 15:00:00,2013-09-20 20:00:00,2013-09-14 15:00:00,2013-10-15 18:00:00,6.21,,,,,,,,,,
-Ron,2013,CAR,Yes,Ron_2013,Ron_2013_CAR,GPS,Maryland,Complete,2010,M,Adult,2013-09-20 20:00:00,2013-10-07 13:00:00,2013-09-14 15:00:00,2013-10-15 18:00:00,16.71,,,,,,,,,,
-Ron,2013,SCA,Yes,Ron_2013,Ron_2013_SCA,GPS,Maryland,Complete,2010,M,Adult,2013-10-07 13:00:00,2013-10-15 18:00:00,2013-09-14 15:00:00,2013-10-15 18:00:00,8.21,,,,,,,,,,
-Ron,2014,US,Yes,Ron_2014,Ron_2014_US,GPS,Maryland,Complete,2010,M,Adult,2014-09-12 15:00:00,2014-09-21 15:00:00,2014-09-12 15:00:00,2014-10-17 12:00:00,9,,,,,,,,,,Spring migration was very late
-Ron,2014,CAR,Yes,Ron_2014,Ron_2014_CAR,GPS,Maryland,Complete,2010,M,Adult,2014-09-21 15:00:00,2014-10-07 13:00:00,2014-09-12 15:00:00,2014-10-17 12:00:00,15.92,,,,,,,,,,Spring migration was very late
-Ron,2014,SCA,Yes,Ron_2014,Ron_2014_SCA,GPS,Maryland,Complete,2010,M,Adult,2014-10-07 13:00:00,2014-10-17 12:00:00,2014-09-12 15:00:00,2014-10-17 12:00:00,9.96,,,,,,,,,,Spring migration was very late
-Sanford,2010,US,Yes,Sanford_2010,Sanford_2010_US,GPS,Massachusetts,Complete,2007,M,Adult,2010-10-02 21:00:00,2010-10-06 18:00:00,2010-10-02 21:00:00,2010-11-06 17:00:00,3.88,,,,,,,,,,Wintered in CAR
-Sanford,2010,CAR,Yes,Sanford_2010,Sanford_2010_CAR,GPS,Massachusetts,Complete,2007,M,Adult,2010-10-06 18:00:00,2010-11-06 17:00:00,2010-10-02 21:00:00,2010-11-06 17:00:00,30.96,,,,,,,,,,Wintered in CAR
-Shanawdithit,2016,US,Yes,Shanawdithit_2016,Shanawdithit_2016_US,GPS,Newfoundland,Complete,2013,F,Adult,2016-09-16 13:00:00,2016-10-09 16:00:00,2016-09-16 13:00:00,2016-10-28 18:00:00,23.13,,,,,,,,,,
-Shanawdithit,2016,CAR,Yes,Shanawdithit_2016,Shanawdithit_2016_CAR,GPS,Newfoundland,Complete,2013,F,Adult,2016-10-09 16:00:00,2016-10-25 17:00:00,2016-09-16 13:00:00,2016-10-28 18:00:00,16.04,,,,,,,,,,
-Shanawdithit,2016,SCA,Yes,Shanawdithit_2016,Shanawdithit_2016_SCA,GPS,Newfoundland,Complete,2013,F,Adult,2016-10-25 17:00:00,2016-10-28 18:00:00,2016-09-16 13:00:00,2016-10-28 18:00:00,3.04,,,,,,,,,,
-Shanawdithit,2017,US,Yes,Shanawdithit_2017,Shanawdithit_2017_US,GPS,Newfoundland,Incomplete,2013,F,Adult,2017-09-15 15:00:00,2017-10-08 21:00:00,2017-09-15 15:00:00,2017-10-28 14:00:00,23.25,,,,,,,,,,
-Snowy,2011,US,Yes,Snowy_2011,Snowy_2011_US,GPS,Massachusetts,Complete,2011,M,Juvenile,2011-08-11 18:00:00,2011-10-09 21:00:00,2011-08-11 18:00:00,2011-11-18 15:00:00,59.13,,,,,,,,,,In some years he wintered in S. Amer. But in other he wintered in the Carribean. 
-Snowy,2011,CAR,Yes,Snowy_2011,Snowy_2011_CAR,GPS,Massachusetts,Complete,2011,M,Juvenile,2011-10-09 21:00:00,2011-11-14 13:00:00,2011-08-11 18:00:00,2011-11-18 15:00:00,35.67,,,,,,,,,,In some years he wintered in S. Amer. But in other he wintered in the Carribean. 
-Snowy,2011,SCA,Yes,Snowy_2011,Snowy_2011_SCA,GPS,Massachusetts,Complete,2011,M,Juvenile,2011-11-14 13:00:00,2011-11-18 15:00:00,2011-08-11 18:00:00,2011-11-18 15:00:00,4.08,,,,,,,,,,In some years he wintered in S. Amer. But in other he wintered in the Carribean. 
-Snowy,2013,US,Yes,Snowy_2013,Snowy_2013_US,GPS,Massachusetts,Complete,2011,M,Adult,2013-07-05 14:00:00,2013-08-23 10:00:00,2013-07-05 14:00:00,2013-08-26 17:00:00,48.83,,,,,,,,,,In some years he wintered in S. Amer. But in other he wintered in the Carribean. 
-Snowy,2013,CAR,Yes,Snowy_2013,Snowy_2013_CAR,GPS,Massachusetts,Complete,2011,M,Adult,2013-08-23 10:00:00,2013-08-26 17:00:00,2013-07-05 14:00:00,2013-08-26 17:00:00,3.29,,,,,,,,,,In some years he wintered in S. Amer. But in other he wintered in the Carribean. 
-Snowy,2014,US,Yes,Snowy_2014,Snowy_2014_US,GPS,Massachusetts,Complete,2011,M,Adult,2014-08-17 19:00:00,2014-08-24 15:00:00,2014-08-17 19:00:00,2014-09-17 17:00:00,6.83,,,,,,,,,,In some years he wintered in S. Amer. But in other he wintered in the Carribean. 
-Snowy,2014,CAR,Yes,Snowy_2014,Snowy_2014_CAR,GPS,Massachusetts,Complete,2011,M,Adult,2014-08-24 15:00:00,2014-09-09 18:00:00,2014-08-17 19:00:00,2014-09-17 17:00:00,16.13,,,,,,,,,,In some years he wintered in S. Amer. But in other he wintered in the Carribean. 
-Snowy,2014,SCA,Yes,Snowy_2014,Snowy_2014_SCA,GPS,Massachusetts,Complete,2011,M,Adult,2014-09-09 18:00:00,2014-09-17 17:00:00,2014-08-17 19:00:00,2014-09-17 17:00:00,7.96,,,,,,,,,,In some years he wintered in S. Amer. But in other he wintered in the Carribean. 
-Snowy,2015,US,Yes,Snowy_2015,Snowy_2015_US,GPS,Massachusetts,Complete,2011,M,Adult,2015-08-07 15:00:00,2015-08-13 20:00:00,2015-08-07 15:00:00,2015-08-14 22:00:00,6.21,,,,,,,,,,In some years he wintered in S. Amer. But in other he wintered in the Carribean. 
-Snowy,2015,CAR,Yes,Snowy_2015,Snowy_2015_CAR,GPS,Massachusetts,Complete,2011,M,Adult,2015-08-13 20:00:00,2015-08-14 22:00:00,2015-08-07 15:00:00,2015-08-14 22:00:00,1.08,,,,,,,,,,In some years he wintered in S. Amer. But in other he wintered in the Carribean. 
-Sr__Bones,2010,US,Yes,Sr__Bones_2010,Sr__Bones_2010_US,GPS,Massachusetts,Complete,2005,M,Adult,2010-09-10 16:00:00,2010-09-20 19:00:00,2010-09-10 16:00:00,2010-10-12 16:00:00,10.13,,,,,,,,,,
-Sr__Bones,2010,CAR,Yes,Sr__Bones_2010,Sr__Bones_2010_CAR,GPS,Massachusetts,Complete,2005,M,Adult,2010-09-20 19:00:00,2010-10-04 22:00:00,2010-09-10 16:00:00,2010-10-12 16:00:00,14.13,,,,,,,,,,
-Sr__Bones,2010,SCA,Yes,Sr__Bones_2010,Sr__Bones_2010_SCA,GPS,Massachusetts,Complete,2005,M,Adult,2010-10-04 22:00:00,2010-10-12 16:00:00,2010-09-10 16:00:00,2010-10-12 16:00:00,7.75,,,,,,,,,,
-Sr__Bones,2011,US,Yes,Sr__Bones_2011,Sr__Bones_2011_US,GPS,Massachusetts,Complete,2005,M,Adult,2011-09-16 16:00:00,2011-09-25 18:00:00,2011-09-16 16:00:00,2011-10-18 01:00:00,9.08,,,,,,,,,,
-Sr__Bones,2011,CAR,Yes,Sr__Bones_2011,Sr__Bones_2011_CAR,GPS,Massachusetts,Complete,2005,M,Adult,2011-09-25 18:00:00,2011-10-14 18:00:00,2011-09-16 16:00:00,2011-10-18 01:00:00,19,,,,,,,,,,
-Sr__Bones,2011,SCA,Yes,Sr__Bones_2011,Sr__Bones_2011_SCA,GPS,Massachusetts,Complete,2005,M,Adult,2011-10-14 18:00:00,2011-10-18 01:00:00,2011-09-16 16:00:00,2011-10-18 01:00:00,3.29,,,,,,,,,,
-Sr__Bones,2012,US,Yes,Sr__Bones_2012,Sr__Bones_2012_US,GPS,Massachusetts,Complete,2005,M,Adult,2012-09-16 00:00:00,2012-09-24 15:00:00,2012-09-16 00:00:00,2012-10-06 14:00:00,8.63,,,,,,,,,,
-Sr__Bones,2012,CAR,Yes,Sr__Bones_2012,Sr__Bones_2012_CAR,GPS,Massachusetts,Complete,2005,M,Adult,2012-09-24 15:00:00,2012-10-04 15:00:00,2012-09-16 00:00:00,2012-10-06 14:00:00,10,,,,,,,,,,
-Sr__Bones,2012,SCA,Yes,Sr__Bones_2012,Sr__Bones_2012_SCA,GPS,Massachusetts,Complete,2005,M,Adult,2012-10-04 15:00:00,2012-10-06 14:00:00,2012-09-16 00:00:00,2012-10-06 14:00:00,1.96,,,,,,,,,,
-Sr__Bones,2013,US,Yes,Sr__Bones_2013,Sr__Bones_2013_US,GPS,Massachusetts,Complete,2005,M,Adult,2013-09-14 15:00:00,2013-09-20 20:00:00,2013-09-14 15:00:00,2013-09-30 01:00:00,6.21,,,,,,,,,,
-Sr__Bones,2013,CAR,Yes,Sr__Bones_2013,Sr__Bones_2013_CAR,GPS,Massachusetts,Complete,2005,M,Adult,2013-09-20 20:00:00,2013-09-27 13:00:00,2013-09-14 15:00:00,2013-09-30 01:00:00,6.71,,,,,,,,,,
-Sr__Bones,2013,SCA,Yes,Sr__Bones_2013,Sr__Bones_2013_SCA,GPS,Massachusetts,Complete,2005,M,Adult,2013-09-27 13:00:00,2013-09-30 01:00:00,2013-09-14 15:00:00,2013-09-30 01:00:00,2.5,,,,,,,,,,
-Staddler,2015,US,Yes,Staddler_2015,Staddler_2015_US,GPS,Massachusetts,Complete,2011,M,Adult,2015-08-30 16:00:00,2015-09-16 18:00:00,2015-08-30 16:00:00,2015-10-14 16:00:00,17.08,,,,,,,,,,
-Staddler,2015,CAR,Yes,Staddler_2015,Staddler_2015_CAR,GPS,Massachusetts,Complete,2011,M,Adult,2015-09-16 18:00:00,2015-09-29 13:00:00,2015-08-30 16:00:00,2015-10-14 16:00:00,12.79,,,,,,,,,,
-Staddler,2015,SCA,Yes,Staddler_2015,Staddler_2015_SCA,GPS,Massachusetts,Complete,2011,M,Adult,2015-09-29 13:00:00,2015-10-14 16:00:00,2015-08-30 16:00:00,2015-10-14 16:00:00,15.13,,,,,,,,,,
-Staddler,2016,US,Yes,Staddler_2016,Staddler_2016_US,GPS,Massachusetts,Complete,2011,M,Adult,2016-09-05 18:00:00,2016-09-17 17:00:00,2016-09-05 18:00:00,2016-10-13 13:00:00,11.96,,,,,,,,,,
-Staddler,2016,CAR,Yes,Staddler_2016,Staddler_2016_CAR,GPS,Massachusetts,Complete,2011,M,Adult,2016-09-17 17:00:00,2016-09-30 13:00:00,2016-09-05 18:00:00,2016-10-13 13:00:00,12.83,,,,,,,,,,
-Staddler,2016,SCA,Yes,Staddler_2016,Staddler_2016_SCA,GPS,Massachusetts,Complete,2011,M,Adult,2016-09-30 13:00:00,2016-10-13 13:00:00,2016-09-05 18:00:00,2016-10-13 13:00:00,13,,,,,,,,,,
-Staddler,2017,US,Yes,Staddler_2017,Staddler_2017_US,GPS,Massachusetts,Incomplete,2011,M,Adult,2017-09-09 14:00:00,2017-09-17 05:00:00,2017-09-09 14:00:00,2017-09-24 19:00:00,7.63,,,,,,,,,,
-Staddler,2017,CAR,Yes,Staddler_2017,Staddler_2017_CAR,GPS,Massachusetts,Incomplete,2011,M,Adult,2017-09-17 05:00:00,2017-09-24 19:00:00,2017-09-09 14:00:00,2017-09-24 19:00:00,7.58,,,,,,,,,,
-Tango,2013,US,No,Tango_2013,Tango_2013_US,GSM/GPS,Maryland,Complete,2008,M,Adult,2013-08-23 13:43:00,2013-08-28 21:04:00,2013-08-23 13:43:00,2013-09-07 18:50:00,5.31,,,,,,,,,,
-Tango,2013,CAR,No,Tango_2013,Tango_2013_CAR,GSM/GPS,Maryland,Complete,2008,M,Adult,2013-08-28 21:04:00,2013-09-06 06:13:00,2013-08-23 13:43:00,2013-09-07 18:50:00,8.38,,,,,,,,,,
-Tango,2013,SCA,No,Tango_2013,Tango_2013_SCA,GSM/GPS,Maryland,Complete,2008,M,Adult,2013-09-06 06:13:00,2013-09-07 18:50:00,2013-08-23 13:43:00,2013-09-07 18:50:00,1.53,,,,,,,,,,
-Thatcher,2010,US,Yes,Thatcher_2010,Thatcher_2010_US,GPS,Delaware,Complete,2010,M,Juvenile,2010-09-04 19:00:00,2010-10-29 14:00:00,2010-09-04 19:00:00,2010-11-28 16:00:00,54.79,,,,,,,,,,
-Thatcher,2010,CAR,Yes,Thatcher_2010,Thatcher_2010_CAR,GPS,Delaware,Complete,2010,M,Juvenile,2010-10-29 14:00:00,2010-11-05 15:00:00,2010-09-04 19:00:00,2010-11-28 16:00:00,7.04,,,,,,,,,,
-Thatcher,2010,SCA,Yes,Thatcher_2010,Thatcher_2010_SCA,GPS,Delaware,Complete,2010,M,Juvenile,2010-11-05 15:00:00,2010-11-28 16:00:00,2010-09-04 19:00:00,2010-11-28 16:00:00,23.04,,,,,,,,,,
-Thatcher,2012,US,Yes,Thatcher_2012,Thatcher_2012_US,GPS,New Jersey,Incomplete,2010,M,Adult,2012-09-15 16:00:00,2012-09-25 18:00:00,2012-09-15 16:00:00,2012-10-28 19:00:00,10.08,,,,,,,,,,
-Wausau,2015,US,Yes,Wausau_2015,Wausau_2015_US,GPS,New Hampshire,Complete,2011,M,Adult,2015-09-11 17:00:00,2015-09-25 17:00:00,2015-09-11 17:00:00,2015-10-21 15:00:00,14,,,,,,,,,,
-Wausau,2015,CAR,Yes,Wausau_2015,Wausau_2015_CAR,GPS,New Hampshire,Complete,2011,M,Adult,2015-09-25 17:00:00,2015-10-09 15:00:00,2015-09-11 17:00:00,2015-10-21 15:00:00,13.92,,,,,,,,,,
-Wausau,2015,SCA,Yes,Wausau_2015,Wausau_2015_SCA,GPS,New Hampshire,Complete,2011,M,Adult,2015-10-09 15:00:00,2015-10-21 15:00:00,2015-09-11 17:00:00,2015-10-21 15:00:00,12,,,,,,,,,,
-Wausau,2016,US,Yes,Wausau_2016,Wausau_2016_US,GPS,New Hampshire,Complete,2011,M,Adult,2016-09-04 18:00:00,2016-09-16 20:00:00,2016-09-04 18:00:00,2016-10-05 18:00:00,12.08,,,,,,,,,,
-Wausau,2016,CAR,Yes,Wausau_2016,Wausau_2016_CAR,GPS,New Hampshire,Complete,2011,M,Adult,2016-09-16 20:00:00,2016-09-29 13:00:00,2016-09-04 18:00:00,2016-10-05 18:00:00,12.71,,,,,,,,,,
-Wausau,2016,SCA,Yes,Wausau_2016,Wausau_2016_SCA,GPS,New Hampshire,Complete,2011,M,Adult,2016-09-29 13:00:00,2016-10-05 18:00:00,2016-09-04 18:00:00,2016-10-05 18:00:00,6.21,,,,,,,,,,
-Weber,2013,US,No,Weber_2013,Weber_2013_US,GPS,New Hampshire,Incomplete,2013,M,Juvenile,2013-09-06 14:00:00,2013-09-19 13:00:00,2013-09-06 14:00:00,2013-10-01 19:00:00,12.96,,,,,,,,,,
-Weber,2013,CAR,No,Weber_2013,Weber_2013_CAR,GPS,New Hampshire,Incomplete,2013,M,Juvenile,2013-09-19 13:00:00,2013-09-27 15:00:00,2013-09-06 14:00:00,2013-10-01 19:00:00,8.08,,,,,,,,,,
-Whit,2013,US,No,Whit_2013,Whit_2013_US,GPS,Massachusetts,Complete,2013,M,Juvenile,2013-10-08 15:00:00,2013-10-15 18:00:00,2013-10-08 15:00:00,2013-12-16 14:00:00,7.13,,,,,,,,,,Travelled over Atlantic during first segment
-Whit,2013,CAR,No,Whit_2013,Whit_2013_CAR,GPS,Massachusetts,Complete,2013,M,Juvenile,2013-10-15 18:00:00,2013-12-15 19:00:00,2013-10-08 15:00:00,2013-12-16 14:00:00,61.04,,,,,,,,,,Travelled over Atlantic during first segment
-Whit,2013,SCA,No,Whit_2013,Whit_2013_SCA,GPS,Massachusetts,Complete,2013,M,Juvenile,2013-12-15 19:00:00,2013-12-16 14:00:00,2013-10-08 15:00:00,2013-12-16 14:00:00,0.79,,,,,,,,,,Travelled over Atlantic during first segment
-Woody,2013,US,Yes,Woody_2013,Woody_2013_US,GSM/GPS,Maryland,Complete,2008,M,Adult,2013-09-03 16:07:00,2013-09-08 17:14:00,2013-09-03 16:07:00,2013-09-16 19:40:00,5.05,,,,,,,,,,
-Woody,2013,CAR,Yes,Woody_2013,Woody_2013_CAR,GSM/GPS,Maryland,Complete,2008,M,Adult,2013-09-08 17:14:00,2013-09-15 15:51:00,2013-09-03 16:07:00,2013-09-16 19:40:00,6.94,,,,,,,,,,
-Woody,2013,SCA,Yes,Woody_2013,Woody_2013_SCA,GSM/GPS,Maryland,Complete,2008,M,Adult,2013-09-15 15:51:00,2013-09-16 19:40:00,2013-09-03 16:07:00,2013-09-16 19:40:00,1.16,,,,,,,,,,
-Woody,2014,US,Yes,Woody_2014,Woody_2014_US,GSM/GPS,Maryland,Complete,2008,M,Adult,2014-09-06 14:48:00,2014-09-11 21:10:00,2014-09-06 14:48:00,2014-09-20 20:03:00,5.27,,,,,,,,,,
-Woody,2014,CAR,Yes,Woody_2014,Woody_2014_CAR,GSM/GPS,Maryland,Complete,2008,M,Adult,2014-09-11 21:10:00,2014-09-19 17:36:00,2014-09-06 14:48:00,2014-09-20 20:03:00,7.85,,,,,,,,,,
-Woody,2014,SCA,Yes,Woody_2014,Woody_2014_SCA,GSM/GPS,Maryland,Complete,2008,M,Adult,2014-09-19 17:36:00,2014-09-20 20:03:00,2014-09-06 14:48:00,2014-09-20 20:03:00,1.1,,,,,,,,,,
+Indvidual,Migration Year,Segment,Multiple,migrationEvent,SegmentID,Device,Starting_Location,Completion,Year Born,Sex,Age,Seg_Start,Seg_End,Mig_Start,Mig_End,Duration
+Belle,2015,US,Yes,Belle_2015,Belle_2015_US,GPS,Massachusetts,Complete,2010,M,Adult,2015-09-15 18:00:00,2015-09-24 17:00:00,2015-09-15 18:00:00,2015-10-17 14:00:00,8.96
+Belle,2015,CAR,Yes,Belle_2015,Belle_2015_CAR,GPS,Massachusetts,Complete,2010,M,Adult,2015-09-24 17:00:00,2015-10-04 16:00:00,2015-09-15 18:00:00,2015-10-17 14:00:00,9.96
+Belle,2015,SCA,Yes,Belle_2015,Belle_2015_SCA,GPS,Massachusetts,Complete,2010,M,Adult,2015-10-04 16:00:00,2015-10-17 14:00:00,2015-09-15 18:00:00,2015-10-17 14:00:00,12.92
+Belle,2016,US,Yes,Belle_2016,Belle_2016_US,GPS,Massachusetts,Complete,2010,M,Adult,2016-09-21 17:00:00,2016-09-29 16:00:00,2016-09-21 17:00:00,2016-10-27 18:00:00,7.96
+Belle,2016,CAR,Yes,Belle_2016,Belle_2016_CAR,GPS,Massachusetts,Complete,2010,M,Adult,2016-09-29 16:00:00,2016-10-12 14:00:00,2016-09-21 17:00:00,2016-10-27 18:00:00,12.92
+Belle,2016,SCA,Yes,Belle_2016,Belle_2016_SCA,GPS,Massachusetts,Complete,2010,M,Adult,2016-10-12 14:00:00,2016-10-27 18:00:00,2016-09-21 17:00:00,2016-10-27 18:00:00,15.17
+Donovan,2014,US,Yes,Donovan_2014,Donovan_2014_US,GPS,New Hampshire,Complete,2009,M,Adult,2014-09-18 17:00:00,2014-09-26 16:00:00,2014-09-18 17:00:00,2014-10-12 17:00:00,7.96
+Donovan,2014,CAR,Yes,Donovan_2014,Donovan_2014_CAR,GPS,New Hampshire,Complete,2009,M,Adult,2014-09-26 16:00:00,2014-10-09 15:00:00,2014-09-18 17:00:00,2014-10-12 17:00:00,12.96
+Donovan,2014,SCA,Yes,Donovan_2014,Donovan_2014_SCA,GPS,New Hampshire,Complete,2009,M,Adult,2014-10-09 15:00:00,2014-10-12 17:00:00,2014-09-18 17:00:00,2014-10-12 17:00:00,3.08
+Donovan,2015,US,Yes,Donovan_2015,Donovan_2015_US,GPS,New Hampshire,Complete,2009,M,Adult,2015-09-20 13:00:00,2015-09-25 20:00:00,2015-09-20 13:00:00,2015-10-12 15:00:00,5.29
+Donovan,2015,CAR,Yes,Donovan_2015,Donovan_2015_CAR,GPS,New Hampshire,Complete,2009,M,Adult,2015-09-25 20:00:00,2015-10-09 18:00:00,2015-09-20 13:00:00,2015-10-12 15:00:00,13.92
+Donovan,2015,SCA,Yes,Donovan_2015,Donovan_2015_SCA,GPS,New Hampshire,Complete,2009,M,Adult,2015-10-09 18:00:00,2015-10-12 15:00:00,2015-09-20 13:00:00,2015-10-12 15:00:00,2.88
+Edwin,2013,US,Yes,Edwin_2013,Edwin_2013_US,GSM/GPS,Connecticut,Complete,2008,M,Adult,2013-08-16 16:03:00,2013-08-26 21:51:00,2013-08-16 16:03:00,2013-10-06 13:45:00,10.24
+Edwin,2013,CAR,Yes,Edwin_2013,Edwin_2013_CAR,GSM/GPS,Connecticut,Complete,2008,M,Adult,2013-08-26 21:51:00,2013-09-18 14:03:00,2013-08-16 16:03:00,2013-10-06 13:45:00,22.68
+Edwin,2013,SCA,Yes,Edwin_2013,Edwin_2013_SCA,GSM/GPS,Connecticut,Complete,2008,M,Adult,2013-09-18 14:03:00,2013-10-06 13:45:00,2013-08-16 16:03:00,2013-10-06 13:45:00,17.99
+Edwin,2014,US,Yes,Edwin_2014,Edwin_2014_US,GSM/GPS,Connecticut,Complete,2008,M,Adult,2014-08-18 13:44:00,2014-08-24 16:54:00,2014-08-18 13:44:00,2014-09-10 16:58:00,6.13
+Edwin,2014,CAR,Yes,Edwin_2014,Edwin_2014_CAR,GSM/GPS,Connecticut,Complete,2008,M,Adult,2014-08-24 16:54:00,2014-08-31 08:20:00,2014-08-18 13:44:00,2014-09-10 16:58:00,6.64
+Edwin,2014,SCA,Yes,Edwin_2014,Edwin_2014_SCA,GSM/GPS,Connecticut,Complete,2008,M,Adult,2014-08-31 08:20:00,2014-09-10 16:58:00,2014-08-18 13:44:00,2014-09-10 16:58:00,10.36
+North_Fork_Bob,2013,US,Yes,North_Fork_Bob_2013,North_Fork_Bob_2013_US,GPS,Connecticut,Complete,2008,M,Adult,2013-09-24 21:00:00,2013-09-27 18:00:00,2013-09-24 21:00:00,2013-11-05 15:00:00,2.88
+North_Fork_Bob,2013,CAR,Yes,North_Fork_Bob_2013,North_Fork_Bob_2013_CAR,GPS,Connecticut,Complete,2008,M,Adult,2013-09-27 18:00:00,2013-10-20 13:00:00,2013-09-24 21:00:00,2013-11-05 15:00:00,22.79
+North_Fork_Bob,2013,SCA,Yes,North_Fork_Bob_2013,North_Fork_Bob_2013_SCA,GPS,Connecticut,Complete,2008,M,Adult,2013-10-20 13:00:00,2013-11-05 15:00:00,2013-09-24 21:00:00,2013-11-05 15:00:00,16.08
+North_Fork_Bob,2014,US,Yes,North_Fork_Bob_2014,North_Fork_Bob_2014_US,GPS,Connecticut,Complete,2008,M,Adult,2014-09-19 15:00:00,2014-09-27 17:00:00,2014-09-19 15:00:00,2014-10-12 20:00:00,8.08
+North_Fork_Bob,2014,CAR,Yes,North_Fork_Bob_2014,North_Fork_Bob_2014_CAR,GPS,Connecticut,Complete,2008,M,Adult,2014-09-27 17:00:00,2014-10-09 13:00:00,2014-09-19 15:00:00,2014-10-12 20:00:00,11.83
+North_Fork_Bob,2014,SCA,Yes,North_Fork_Bob_2014,North_Fork_Bob_2014_SCA,GPS,Connecticut,Complete,2008,M,Adult,2014-10-09 13:00:00,2014-10-12 20:00:00,2014-09-19 15:00:00,2014-10-12 20:00:00,3.29
+Ron,2013,US,Yes,Ron_2013,Ron_2013_US,GPS,Maryland,Complete,2010,M,Adult,2013-09-14 15:00:00,2013-09-20 20:00:00,2013-09-14 15:00:00,2013-10-15 18:00:00,6.21
+Ron,2013,CAR,Yes,Ron_2013,Ron_2013_CAR,GPS,Maryland,Complete,2010,M,Adult,2013-09-20 20:00:00,2013-10-07 13:00:00,2013-09-14 15:00:00,2013-10-15 18:00:00,16.71
+Ron,2013,SCA,Yes,Ron_2013,Ron_2013_SCA,GPS,Maryland,Complete,2010,M,Adult,2013-10-07 13:00:00,2013-10-15 18:00:00,2013-09-14 15:00:00,2013-10-15 18:00:00,8.21
+Ron,2014,US,Yes,Ron_2014,Ron_2014_US,GPS,Maryland,Complete,2010,M,Adult,2014-09-12 15:00:00,2014-09-21 15:00:00,2014-09-12 15:00:00,2014-10-17 12:00:00,9
+Ron,2014,CAR,Yes,Ron_2014,Ron_2014_CAR,GPS,Maryland,Complete,2010,M,Adult,2014-09-21 15:00:00,2014-10-07 13:00:00,2014-09-12 15:00:00,2014-10-17 12:00:00,15.92
+Ron,2014,SCA,Yes,Ron_2014,Ron_2014_SCA,GPS,Maryland,Complete,2010,M,Adult,2014-10-07 13:00:00,2014-10-17 12:00:00,2014-09-12 15:00:00,2014-10-17 12:00:00,9.96
+Sr__Bones,2012,US,Yes,Sr__Bones_2012,Sr__Bones_2012_US,GPS,Massachusetts,Complete,2005,M,Adult,2012-09-16 00:00:00,2012-09-24 15:00:00,2012-09-16 00:00:00,2012-10-06 14:00:00,8.63
+Sr__Bones,2012,CAR,Yes,Sr__Bones_2012,Sr__Bones_2012_CAR,GPS,Massachusetts,Complete,2005,M,Adult,2012-09-24 15:00:00,2012-10-04 15:00:00,2012-09-16 00:00:00,2012-10-06 14:00:00,10
+Sr__Bones,2012,SCA,Yes,Sr__Bones_2012,Sr__Bones_2012_SCA,GPS,Massachusetts,Complete,2005,M,Adult,2012-10-04 15:00:00,2012-10-06 14:00:00,2012-09-16 00:00:00,2012-10-06 14:00:00,1.96
+Sr__Bones,2013,US,Yes,Sr__Bones_2013,Sr__Bones_2013_US,GPS,Massachusetts,Complete,2005,M,Adult,2013-09-14 15:00:00,2013-09-20 20:00:00,2013-09-14 15:00:00,2013-09-30 01:00:00,6.21
+Sr__Bones,2013,CAR,Yes,Sr__Bones_2013,Sr__Bones_2013_CAR,GPS,Massachusetts,Complete,2005,M,Adult,2013-09-20 20:00:00,2013-09-27 13:00:00,2013-09-14 15:00:00,2013-09-30 01:00:00,6.71
+Sr__Bones,2013,SCA,Yes,Sr__Bones_2013,Sr__Bones_2013_SCA,GPS,Massachusetts,Complete,2005,M,Adult,2013-09-27 13:00:00,2013-09-30 01:00:00,2013-09-14 15:00:00,2013-09-30 01:00:00,2.5
+Staddler,2015,US,Yes,Staddler_2015,Staddler_2015_US,GPS,Massachusetts,Complete,2011,M,Adult,2015-08-30 16:00:00,2015-09-16 18:00:00,2015-08-30 16:00:00,2015-10-14 16:00:00,17.08
+Staddler,2015,CAR,Yes,Staddler_2015,Staddler_2015_CAR,GPS,Massachusetts,Complete,2011,M,Adult,2015-09-16 18:00:00,2015-09-29 13:00:00,2015-08-30 16:00:00,2015-10-14 16:00:00,12.79
+Staddler,2015,SCA,Yes,Staddler_2015,Staddler_2015_SCA,GPS,Massachusetts,Complete,2011,M,Adult,2015-09-29 13:00:00,2015-10-14 16:00:00,2015-08-30 16:00:00,2015-10-14 16:00:00,15.13
+Staddler,2016,US,Yes,Staddler_2016,Staddler_2016_US,GPS,Massachusetts,Complete,2011,M,Adult,2016-09-05 18:00:00,2016-09-17 17:00:00,2016-09-05 18:00:00,2016-10-13 13:00:00,11.96
+Staddler,2016,CAR,Yes,Staddler_2016,Staddler_2016_CAR,GPS,Massachusetts,Complete,2011,M,Adult,2016-09-17 17:00:00,2016-09-30 13:00:00,2016-09-05 18:00:00,2016-10-13 13:00:00,12.83
+Staddler,2016,SCA,Yes,Staddler_2016,Staddler_2016_SCA,GPS,Massachusetts,Complete,2011,M,Adult,2016-09-30 13:00:00,2016-10-13 13:00:00,2016-09-05 18:00:00,2016-10-13 13:00:00,13
+Wausau,2015,US,Yes,Wausau_2015,Wausau_2015_US,GPS,New Hampshire,Complete,2011,M,Adult,2015-09-11 17:00:00,2015-09-25 17:00:00,2015-09-11 17:00:00,2015-10-21 15:00:00,14
+Wausau,2015,CAR,Yes,Wausau_2015,Wausau_2015_CAR,GPS,New Hampshire,Complete,2011,M,Adult,2015-09-25 17:00:00,2015-10-09 15:00:00,2015-09-11 17:00:00,2015-10-21 15:00:00,13.92
+Wausau,2015,SCA,Yes,Wausau_2015,Wausau_2015_SCA,GPS,New Hampshire,Complete,2011,M,Adult,2015-10-09 15:00:00,2015-10-21 15:00:00,2015-09-11 17:00:00,2015-10-21 15:00:00,12
+Wausau,2016,US,Yes,Wausau_2016,Wausau_2016_US,GPS,New Hampshire,Complete,2011,M,Adult,2016-09-04 18:00:00,2016-09-16 20:00:00,2016-09-04 18:00:00,2016-10-05 18:00:00,12.08
+Wausau,2016,CAR,Yes,Wausau_2016,Wausau_2016_CAR,GPS,New Hampshire,Complete,2011,M,Adult,2016-09-16 20:00:00,2016-09-29 13:00:00,2016-09-04 18:00:00,2016-10-05 18:00:00,12.71
+Wausau,2016,SCA,Yes,Wausau_2016,Wausau_2016_SCA,GPS,New Hampshire,Complete,2011,M,Adult,2016-09-29 13:00:00,2016-10-05 18:00:00,2016-09-04 18:00:00,2016-10-05 18:00:00,6.21
