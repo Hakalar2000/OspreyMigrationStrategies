@@ -4,7 +4,7 @@ author: "Lewis Hakam"
 output: html_document
 ---
 
-```{r setup, include=FALSE, warning=FALSE}
+```{r setup, include=TRUE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(move) #Download, manipulate, anlayze data from Movebank
 library(sp) #Spatial objects in Movebank
@@ -64,6 +64,7 @@ library(ComplexHeatmap) #Correlation plots in R
 library(circlize) #color bar for ComplexHeatmap
 library(stats) #TukeyHSD - package comes with base R
 library(rootdetectR) #Making results of TukeyHSD into a matrix
+library(gridExtra) #arranging plots in a grid
 ```
 
 ## Introduction
@@ -101,9 +102,6 @@ library(rootdetectR) #Making results of TukeyHSD into a matrix
 loginStored <- movebankLogin(username = "UserName", password = "Password")
 ```
 
-```{r, echo=FALSE}
-loginStored <- movebankLogin(username = "lhaka2", password = "!ShamaJ2016!")
-```
 
 #### Downloading Movebank Summary Table
 
@@ -538,16 +536,6 @@ colnames(fpt_subset_1day)<- c("FPT", "migrationEvent")
 Subset_1day_fin<-cbind(Subset_1day_move_azim_DF, fpt_subset_1day)
 ```
 
-> I am left with the following datasets:
-* Subset1_1hour_fin
-* Subset1_3hr_fin
-* Subset1_1day_fin
-* Subset1_3day_fin
-* Subset2_1hour_fin
-* Subset2_3hr_fin
-* Subset2_1day_fin
-* Subset2_3day_fin
-
 #### Remove Nightime Fixes and prepare data for analysis
 
 > Lastly, I will remove fixes calculated during hours of darkness where the bird was travelling overland. while osprey may migrate at night on occasion, this typically only occurs over water or deserts. The osprey in this study do not encounter deserts, so I will remove any points during darkness that intersect with the World country polygons. 
@@ -656,6 +644,8 @@ Subset1hour$frequency<-paste("1hour")
 Subset3hour$frequency<-paste("3hour")
 Subset1day$frequency<-paste("1day")
 comparison<-rbind(Subset1hour,Subset3hour,Subset1day)
+comparison$frequency <- factor(comparison$frequency,
+    levels = c('1hour','3hour', '1day'),ordered = TRUE)
 
 #by migration event
 ggplot(comparison, aes(x=speed, y = frequency)) +
@@ -722,21 +712,29 @@ ggplot(comparison, aes(x=FPT, y = frequency)) +
   facet_wrap(~Segment, nrow = 4)
 
 #overall
-ggplot(comparison, aes(x=speed, y = frequency)) +
+speed<-ggplot(comparison, aes(x=speed, y = frequency)) +
   geom_boxplot() +
-  ggtitle("Speed")
+  ggtitle("Boxplots of Raw Data for Each Signal") +
+  ylab(" ") +
+  xlab ("Speed (km/hr)") +
+  theme(plot.title = element_text(hjust = 0.5))
 
-ggplot(comparison, aes(x=turn_speed, y = frequency)) +
+TS<-ggplot(comparison, aes(x=turn_speed, y = frequency)) +
   geom_boxplot() +
-  ggtitle("turn speed")
+  ylab(" ") +
+  xlab("Turn Speed (km/hr)")
 
-ggplot(comparison, aes(x=abs_angle, y = frequency)) +
+TA<-ggplot(comparison, aes(x=abs_angle, y = frequency)) +
   geom_boxplot() +
-  ggtitle("abs_angle")
+  ylab(" ") +
+  xlab("Absolute Angle (degrees)")
 
-ggplot(comparison, aes(x=FPT, y = frequency)) +
+FPT<-ggplot(comparison, aes(x=FPT, y = frequency)) +
   geom_boxplot() +
-  ggtitle("FPT")
+  ylab(" ") +
+  xlab("First Passage Time (hrs)")
+
+grid.arrange(speed, TS, TA, FPT, nrow = 4)
 ```
 
 
