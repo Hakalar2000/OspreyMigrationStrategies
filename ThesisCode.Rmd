@@ -30,6 +30,7 @@ library(ggplot2) #Graphs and maps
 library(sf) #Spatial objects for leaflet and ggplot
 library(tmap) #Package containing world country polygons
 wgs84<-CRS("+proj=longlat +datum=WGS84") #GCS in WGS 1984
+mercator = CRS("+init=epsg:4326") #this projection covers the world so no need to custom define projection attributes
 azim_Bierr = CRS("+proj=aeqd +lat_0=19 +lon_0=-72 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs") #PCS in custom azimuthal equidistant projection. 
 data(World) #World data with country polygons needed for mapping
 world_sf<-st_transform(World, azim_Bierr) #Projected world data
@@ -59,7 +60,10 @@ library(MicEco) # Omega-squared values
 library(stringr) #Extracting string info from dataframes. Useful for manipulating text column values.
 library(factoextra) #Customizing PCA biplots
 library(FactoMineR) #PCA
+library(corrplot) #contribution heatmaps for PCA
 library(RColorBrewer) #Creating custom color palette
+colors_Events<-colorRampPalette(c("#E0AA20", "#ECC713", "#F1E306", "#17E48B","#1BA554", "#268E74", "#0B68FF", "#182DD4", "#073C73", "#39056F"))(16) #custom color pallete for migration events
+colors_Ind<-colorRampPalette(c("#E0AA20", "#ECC713", "#F1E306", "#17E48B","#1BA554", "#268E74", "#0B68FF", "#182DD4", "#073C73", "#39056F"))(8) #custom color pallete for individuals
 library(ComplexHeatmap) #Correlation plots in R
 library(circlize) #color bar for ComplexHeatmap
 library(stats) #TukeyHSD - package comes with base R
@@ -102,6 +106,9 @@ library(gridExtra) #arranging plots in a grid
 loginStored <- movebankLogin(username = "UserName", password = "Password")
 ```
 
+```{r, echo=FALSE}
+loginStored <- movebankLogin(username = "lhaka2", password = "!ShamaJ2016!")
+```
 
 #### Downloading Movebank Summary Table
 
@@ -115,15 +122,18 @@ reference<-getMovebankStudy(study ="Osprey Bierregaard North and South America",
 reference$study_objective
 #download the summary table
 Bierregaard_Study_summary<-getMovebankReferenceTable(study ="Osprey Bierregaard North and South America", login = loginStored, allAttributes = FALSE)
-#Notice that each individual has up to 3 entries. Some individuals only have one entry with sensor_type_id equalling 82789. These individuals were tracked with devices that only collected doppler shift locations. These individuals were mostly tracked before 2007. Some of these individuals may have two entries, but you can always look at tag comments which provide info on whether locations  were estimated via doppler shift or GPS. 
+#Notice that each individual has up to 3 entries. Some individuals only have one entry with sensor_type_id 82789. These individuals were tracked with devices that only collected doppler shift locations. Some of these individuals may have two entries, but you can always look at tag comments which provide info on whether locations  were estimated via doppler shift or GPS. 
+
 #Explore sensor attributes and associated codes. We only want a summary of individuals with GPS or GPS/GSM tracks. We also do not need accessory or engineering data. 
-attributes<-getMovebankSensorsAttributes(study="Osprey Bierregaard North and South America",login=loginStored) #sensor_type_id for GPS locations that we will need is 653. 7842954 is the GPS engineering data and 82798	is doppler shift data. Filter the summary table to keep only entries with the sensor_type_id of 653.
+attributes<-getMovebankSensorsAttributes(study="Osprey Bierregaard North and South America",login=loginStored) #sensor_type_id for GPS locations that we will need is 653. 7842954 is the GPS engineering data and 82798 is doppler shift data. 
+
+#Filter the summary table to keep only entries with the sensor_type_id of 653.
 Bierregaard_Osprey_summary<-filter(Bierregaard_Study_summary,
                                    Bierregaard_Study_summary$sensor_type_id == 653)
-#Fill in attributes of individuals on a spreadsheet. 
+#Fill in attributes of individuals on the Individuals that possibly meet the 1-hour or finer selection criteria on the Metadata Spreadsheet. 
 ```
 
-> The summary tables give me an idea of the total number of individuals in each study and the sex and age of each individual. However, it does not tell me the number of fall migrations for each individual, whether those migrations were complete or not, nor if the individual even started migration. Age and sex data may also be missing. Sometimes sex is unknown, especially for juveniles, which are not sexually dimorphic. 
+> The summary tables give me an idea of the total number of individuals in each study and the sex and age of each individual. However, it does not tell me the number of fall migrations for each individual, whether those migrations were complete or not, nor if the individual even started migration. Age and sex data may also be missing.
 
 #### Download Movebank Dataset
 
@@ -134,19 +144,24 @@ Bierregaard_Osprey_summary<-filter(Bierregaard_Study_summary,
 * GPS fixes outside of July-December (7-12) when osprey are "stationary" or on spring migrations
 * erroneous points that don't meet a defined biological threshold.
 
-```{r}
+```{r, warning=FALSE}
 #Download data from Movebank for GPS tracked individuals.This takes some time. When downloading Movebank data, I can specify which individuals I want in my dataset using animalName = (list of animal local identifiers)
 Bierregaard_Osprey<-getMovebankData(study ="Osprey Bierregaard North and South America",
                                     animalName = c(Bierregaard_Osprey_summary$animal_local_identifier),
                                     login = loginStored, removeDuplicatedTimestamps=TRUE) 
+#over 2 million points...yikes
 #Get the time between consecutive locations using the move package
-#Start by calculating the time lag betwen points for each individual. The output is a list. 
+#Start by calculating the time lag between points for each individual. The output is a list. 
 list_Bierr<-timeLag(Bierregaard_Osprey, units = "hours")
-#lapply function applies a function to a list. Each individual within the data set should have a median or mode timelag of 1 hour or finer. I used median/mode instead of mean since most studies only have trackers turned on during daylight hours. This means that  mean lag values will be larger than 1 hour. 
+#lapply function applies a function to a list. Each individual within the data set should have a median or mode time lag of 1 hour or finer. I used median/mode instead of mean since most studies only have trackers turned on during daylight hours. This means that  mean lag values will be larger than 1 hour. 
 sapply(list_Bierr, mean) #You can see thant most study averages are larger than 1 point per hour .
 sapply(list_Bierr, find_mode) # birds with a finer than 1-hour sampling frequency were tracked using GPS/GSM transmitters. 
 sapply(list_Bierr, median) #results are similar to mode. 
-#make into a data frame so I can easily filter, plot, and manipulate the data.
+#caculate turning angle
+Bierregaard_Osprey <- spTransform(Bierregaard_Osprey, CRSobj=mercator)
+Bierregaard_Osprey$rel_angle<-unlist(lapply(turnAngleGc(Bierregaard_Osprey),function(x) c(NA, x, NA)))
+
+#make into a data frame to easily filter, plot, and manipulate the data.
 Bierregaard_Osprey_DF<-as.data.frame(Bierregaard_Osprey)
 #Filter out non GPS location entries
 Bierregaard_Osprey_DF_GPS<-Bierregaard_Osprey_DF %>%
@@ -156,21 +171,26 @@ Bierregaard_Osprey_DF_GPS$month<-month(ymd_hms(Bierregaard_Osprey_DF_GPS$timesta
 #Extract year data for plotting later
 Bierregaard_Osprey_DF_GPS$year<-year(ymd_hms(Bierregaard_Osprey_DF_GPS$timestamp))
 length(unique(Bierregaard_Osprey_DF_GPS$trackId)) #86 individuals
-#remove outliers
-#filter erroneous points using quantiative methods: Erroneous points are those with unrealistically high speed and turning angle (course). For course (often referred to and confused with heading) we will look at the 90th percentile of points as suggested by Gupte et al., 2021. Course is measured as the angle from magnetic north (clockwise) in which the tracker is moving. For speed I used Kerlinger 1989 maximum recorded flight speed for ospreys which is 33.4 meters/second.
-quant<-quantile(Bierregaard_Osprey_DF_GPS$heading, probs = 0.9)
-Bierregaard_Osprey_DF_Filter<-filter(Bierregaard_Osprey_DF_GPS, ground_speed <= 33.4 & heading < quant) #about 25,000 fixes were removed. 
+
+```
+
+> Remove outliers: filter erroneous points using quantiative methods. Erroneous points are those with unrealistically high speed and turning angle (course). For course (often referred to and confused with heading) we will look at the 90th percentile of points as suggested by Gupte et al., 2021. Course is measured as the angle from magnetic north (clockwise) in which the tracker is moving. For speed I used Kerlinger 1989 maximum recorded flight speed for ospreys which is 33.4 meters/second.
+
+```{r}
+quant<-quantile(Bierregaard_Osprey_DF_GPS$rel_angle, probs = 0.9, na.rm = T)
+Bierregaard_Osprey_DF_Filter<-filter(Bierregaard_Osprey_DF_GPS, ground_speed <= 33.4 & heading < quant) 
+#still over 2 million points...
 #Filter data further by removing timestamps from January through June (keep months 7-12)
 Bierregaard_Osprey_Data <- Bierregaard_Osprey_DF_Filter %>%
-  filter(month %in% c(7:12))
+  filter(month %in% c(7:12)) #Down to 1 million points!
 #Create migration event IDs. Later I will create segment IDs. 
 Bierregaard_Osprey_Data$migrationEvent<-paste(Bierregaard_Osprey_Data$trackId, Bierregaard_Osprey_Data$year)
-length(unique(Bierregaard_Osprey_Data$migrationEvent)) #86 individuals with 145 migration events between them.
-#Check that the IDs: unique(Bierregaard_Osprey_Data$migrationEvent)
+length(unique(Bierregaard_Osprey_Data$migrationEvent)) #145 migration events between 86 individuals.
 #Format the migration event names so that they don't have any spaces or special characters
 Bierregaard_Osprey_Data$migrationEvent<-gsub("\\.", "_", Bierregaard_Osprey_Data$migrationEvent) #remove periods
 Bierregaard_Osprey_Data$migrationEvent<-gsub(" ", "_", Bierregaard_Osprey_Data$migrationEvent) #remove spaces
 ```
+
 
 #### Mapping and Filtering Data
 
@@ -218,7 +238,13 @@ leaflet(filter(Bierregaard_Osprey_Data_sf, Bierregaard_Osprey_Data_sf$trackId ==
   addPopups(popup = ~htmlEscape(timestamp))
 ```
 
->Remove events that do not fit criteria. 
+>Keep only events that match the selection criteria:
+* Had a 1-hour or finer sampling frequency (tracked with GPS or GPS/GSM devices) 
+* Completed at least two fall migrations  
+* Completed at least two migrations as an adult 
+* Male 
+* Wintered in Central/South America. 
+* Travelled for a minimum of 2 days through each migration region 
 
 ```{r}
 #create a list of migration events to remove. 
@@ -230,7 +256,7 @@ length(unique(Bierregaard_Osprey_Data$migrationEvent))
 length(unique(Bierregaard_Osprey_Data$trackId)) #16 migration events for 8 individuals
 ```
 
->#While using leaflet works, this method will take a long grueling time to complete. If you want to expedite this process you can export the data points to CSV files and find start/end dates in ArcGIS or QGIS. The code below will allow you to do this. 
+>#While using leaflet works, this method will take a long grueling time to complete. If you want to expedite this process you can export the data points to CSV files and find start/end dates in ArcGIS or QGIS. 
 
 ```{r, eval=FALSE}
 Bierr_Event<-unique(Bierregaard_Osprey_Data$migrationEvent)
@@ -243,7 +269,7 @@ for (i in Bierr_Event) {
 
 > Next you will remove all fixes for each migration event that fall outside of the start and end date of migration. You will have to load in the metadata file with the migration event start/end dates.
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, message=FALSE}
 IndividualMetadata <- read_csv("IndividualMetadata.csv")
 #make sure this is a dataframe
 IndividualMetadata<-as.data.frame(IndividualMetadata)
@@ -262,22 +288,23 @@ for (i in events) {
   n = filter(y, timestamp <= x$Mig_End & timestamp >= x$Mig_Start)
   Filtered = rbind(Filtered, n)
 }
+str(Filtered) #18,000 fixes left
 ```
 
 
 ## Regularize the Trajectories
 
-> Regularized the data. Data was not collected at perfect 1-hour intervals for a 24 hour period. This means that when I calculate trajectory characteristics, points from the end of one day may connect to points at the start of the next day. If the osprey was sleeping during this time period, speed values would be very low and add inaccuracy to my dataset since I am only concerned with active migration. Regularizing will help me pinpoint times when osprey roosted so those points can be taken out later for 1-hour and 3-hour sampling frequencies after calculating trajectory characteristics. There are of course exceptions when osprey cross over open water. In these cases, speed should be high even after dark. 
+> Regularized the data. Data was not collected at perfect 1-hour intervals for a 24 hour period. This means that when I calculate trajectory characteristics, points from the end of one day may connect to points at the start of the next day. If the osprey was sleeping during this time period, speed values would be very low and add inaccuracy to my dataset since I am only concerned with active migration. Regularizing will help me pinpoint times when osprey roosted so those points can be taken out later for 1-hour and 3-hour sampling frequencies after calculating trajectory characteristics. There are of course exceptions when osprey cross over open water. In these cases, speed should be high even after dark and will be delt with later. 
 
-```{r}
-#Convert to a move object. To do this I had to use the moveVis package since the move function does not work well with actual dataframes. The move package has a number of very convenient functions that allow me to calculate a number of different movement characteristics and prep the data from analysis.
+```{r, fig.show="hold", out.width="10%"}
+#Convert to a move object. To do this I had to use the moveVis package since converting a DF to a move object with the move function was finicky.
 OSPR<-df2move(Filtered,
         proj = wgs84, 
         x = "location_long", y = "location_lat", 
         time = "timestamp", track_id = "migrationEvent")
-#check to see that there are still 92 migration events. Each event in the movestack is named with a unique trackID. 
-length(unique(Filtered$migrationEvent))
-length(unique(OSPR@trackId))
+#Each event in the movestack is named with a unique trackID. 
+length(unique(OSPR@trackId)) #still have 16 migration events!
+
 #regularize the time series through the move package. To do this we will have to apply the regularization to each move object within the Movestack (annoying, I know). The interpolate time function fills in positional points along a standard time series. We will use 1-hour to do this. 
 Stacked_1hour<-list() #empty list for output
 
@@ -289,21 +316,22 @@ for (i in 1:16) {
                col=c("black", "red"), pch=c(19,20)))
   Stacked_1hour[[i]] = x
 }
+
 #convert output list of move objects into a move stack.
 OSPR_1hour<-moveStack(Stacked_1hour) 
 length(unique(OSPR_1hour@trackId)) #check that all migration events are accounted for
-
+#check that the time lag is 1 hour via the mean time lag. 
 list_1hour<-timeLag(OSPR_1hour, units = "hours")
-sapply(list_1hour, median) 
+sapply(list_1hour, mean) 
 ```
 
-#### Annotate with segment region
+#### Add in regional data
 
 ```{r, warning=FALSE}
-#Separate data into segments based on the start/end date of each segment and combine into a singular data frame
+#Separate fixes into regions based on the start/end dates and combine into a singular data frame
+#convert move object into a dataframe.
 OSPR_1hour_DF<-as.data.frame(OSPR_1hour)
-OSPR_1hour_DF
-
+#annotate dataframe
 events<-unique(OSPR_1hour_DF$trackId)
 segs<-data.frame()
 for (i in events) {
@@ -316,21 +344,20 @@ for (i in events) {
     segs = rbind(segs, b)
   }
 }
-length(unique(segs$SegmentID)) #48 segments total
+length(unique(segs$SegmentID)) #48 segments total (16 x 3)
 ```
 
 #### Thin Trajectories
 
-> Next I will thin my trajectories to 3-hour, 1-day, and 3-day sampling frequencies for both subsets.
+> Next I will thin my trajectories to 3-hour and 1-day sampling frequencies. I will do this my migration event region rather than migration event. This just streamlines the code more since I will have to take random samples by migration event region later. 
 
 ```{r}
-#subset 1
 #First create a move object
 Subset_1hour_move<-df2move(segs,
         proj = wgs84, 
         x = "coords.x1", y = "coords.x2", 
         time = "timestamps", track_id = "SegmentID")
-#Regularizing thinned/resampled data to 1-hour so no need to thin to 1 hour again. 
+#Regularizing create 1-hour equal intervals for the base dataset, so need to thin to 1 hour again. 
 
 #3-hour sampling frequency
 Subset_3hr<-list()
@@ -360,10 +387,11 @@ plot(Subset_3hr_move[[1]])
 plot(Subset_1day_move[[1]])
 ```
 
-## Calculate Trajectory Characteristics and Summarize Data
-Now we have all four data sets. The final step before analysis is to calculate trajectory characteristics.
+## Calculate Trajectory Signals and Summarize Data
 
-#### Calculate Characteristics with 'move'
+> Now we have all four data sets. The final step before analysis is to calculate trajectory characteristics.
+
+#### Calculate signals with 'move'
 
 > When calculating distance measurements, Keep in mind that data must be projected using a projection that preserves distance (best projection to use is an azimuthal equidstant projection), while angle measurements need to be calculated using a mercator projection. 
 
@@ -389,7 +417,6 @@ Subset_3hr_move_azim$lag<-unlist(lapply(timeLag(Subset_3hr_move_azim,units = "ho
 Subset_1day_move_azim$lag<-unlist(lapply(timeLag(Subset_1day_move_azim,units = "hours"), c, NA))
 
 #Project data with conformal projection: the Mercator projection is a conformal cylindrical projection
-mercator = CRS("+init=epsg:4326") #this projection covers the world so no need to custom define projection attributes
 Subset_1hour_move_mercator <- spTransform(Subset_1hour_move, CRSobj=mercator)
 Subset_3hr_move_mercator <- spTransform(Subset_3hr_move, CRSobj=mercator)
 Subset_1day_move_mercator <- spTransform(Subset_1day_move, CRSobj=mercator)
@@ -405,9 +432,9 @@ Subset_3hr_move_mercator$rel_angle<-unlist(lapply(turnAngleGc(Subset_3hr_move_me
 Subset_1day_move_mercator$rel_angle<-unlist(lapply(turnAngleGc(Subset_1day_move_mercator),function(x) c(NA, x, NA)))
 ```
 
-#### Calculate Characteristics with Base R and 'adehabitatLT'
+#### Calculate signals with Base R and 'adehabitatLT'
 
->Next I will transform my move objects into data frames and extract the characteristics I calculated previously.
+>Next I will transform my move objects into data frames and extract the characteristics I calculated previously. I will also calculate turn speed in based R. 
 
 ```{r}
 #1-hour
@@ -432,7 +459,7 @@ Subset_1day_move_azim_DF$abs_angle<-Subset_1day_move_mercator_DF$abs_angle
 Subset_1day_move_azim_DF$turn_speed<-Subset_1day_move_azim_DF$speed * cos(Subset_1day_move_azim_DF$rel_angle)
 ```
 
-> Finally, I will transform my dataframe into an ltraj object with the azimuthal equidistant projection so I can calculate FPT
+> Finally, I will transform my dataframe into an ltraj object with the azimuthal equidistant projection so I can calculate First Passage Time (FPT).
 
 ```{r}
 #transform datasets into ltraj objects
@@ -456,10 +483,9 @@ Subset_1day_traj <- as.ltraj(coordinates(Subset_1day_traj),
                           id=Subset_1day_traj$trackId, typeII=TRUE)
 ```
 
->Determine spatial continuity
+```{r, eval=FALSE}
+#before I can calculate FPT I need to calculate the variogram maximum which will provide the spatial continuity at which interactions between individuals and their environment are most apparent. I want the spatial continuity to be the same for all each frequency so I can compare how FPT changes between frequency.
 
-```{r}
-#before I can calculate FPT I need to calculate the average maximum spatial continuity within all eight datasets. I want the spatial continuity to be the same for all datasets so I can compare FPT between individuals if I desire.
 #1-hour fpt
 fpt_max_subset_1hour<-data.frame()
 for (i in 1:48) {
@@ -469,7 +495,7 @@ for (i in 1:48) {
   fpt<-max(z, na.rm = TRUE) #maximum of the variogram
   fpt_max_subset_1hour<-rbind(fpt_max_subset_1hour, fpt)
 }
-mean(fpt_max_subset_1hour[,1]) #11 km
+mean(fpt_max_subset_1hour[,1]) #11 km (round up to nearest whole number)
 
 fpt_max_subset_3hour<-data.frame()
 for (i in 1:48) {
@@ -492,7 +518,7 @@ for (i in 1:48) {
 mean(fpt_max_subset_1day[,1]) #3 km with an error
 ```
 
->Calculate FPT
+> Since all three frequencies show different max spatial continuity, I decided to use the 1-hour continuity of 11 km to stay consistant. 
 
 ```{r}
 #calculate FPT
@@ -500,7 +526,7 @@ mean(fpt_max_subset_1day[,1]) #3 km with an error
 fpt_subset_1hour<-data.frame()
 for (i in 1:48) {
   x<-fpt(Subset_1hour_traj[i], radii=0:100, units="hours")
-  y<-x[[1]]$r11
+  y<-x[[1]]$r11 #use 11 km radii
   r<-as.data.frame(y)
   id<-id(Subset_1hour_traj[i])
   r$migrationEvent<-paste(id)
@@ -538,7 +564,7 @@ Subset_1day_fin<-cbind(Subset_1day_move_azim_DF, fpt_subset_1day)
 
 #### Remove Nightime Fixes and prepare data for analysis
 
-> Lastly, I will remove fixes calculated during hours of darkness where the bird was travelling overland. while osprey may migrate at night on occasion, this typically only occurs over water or deserts. The osprey in this study do not encounter deserts, so I will remove any points during darkness that intersect with the World country polygons. 
+> Lastly, I will remove fixes calculated during hours of darkness where the bird was overland. While osprey may migrate at night on occasion, this typically only occurs over water or deserts. The osprey in this study do not encounter deserts, so I will remove any fixes during hours of darkness that intersect with land. I will only do this for 1-hour and 3-hours since the 1-day frequency is to course to determine roosting vs. active migration. 
 
 ```{r}
 #calculate daylight. I used a 30 minute daylight buffer to account for possible movement at dusk. 
@@ -561,7 +587,6 @@ Subset_3hr_fin_sf<-st_transform(Subset_3hr_fin_sf, azim_Bierr)
 #filter out points during dark hours where birds where not over the ocean. 
 Subset_1hour_fin_sf_filter<-st_join(Subset_1hour_fin_sf, world_filter, join = st_within)
 Subset_1hour_fin_sf_filter$name[is.na(Subset_1hour_fin_sf_filter$name)] <- "Ocean" #need to replace NA values with a character for filtering
-
 Subset_1hour_fin_sf_filter$DaylightUTC<-as.character(Subset_1hour_fin_sf_filter$DaylightUTC)
 Subset_1hour_fin_sf_filter<-Subset_1hour_fin_sf_filter[!(Subset_1hour_fin_sf_filter$name != "Ocean" & 
                               Subset_1hour_fin_sf_filter$DaylightUTC == "FALSE"),]
@@ -597,38 +622,29 @@ Subset3hour$abs_angle<-abs(Subset3hour$abs_angle)
 Subset1day$abs_angle<-abs(Subset1day$abs_angle)
 ```
 
-
 > Take random samples
 
 ```{r}
 set.seed(1998)
-
-#summarize data
-Subset3hour %>%
-  group_by(migrationEvent) %>%
-  summarise(m_speed = mean(speed),
-            m_turn_speed = mean(turn_speed),
-            m_abs_angle = mean (abs_angle),
-            m_FPT = mean(FPT))
 
 #Random samples
 min_Subset1hour<-Subset1hour %>%
   group_by(trackId) %>%
   summarise(N = n()) %>%
   as.data.frame()
-min(min_Subset1hour$N) #23 random samples needed
+min(min_Subset1hour$N) #22 random samples needed
 Samp_Subset1hour <- Subset1hour %>% 
   group_by(trackId) %>% 
-  sample_n(23) 
+  sample_n(22) 
 
 min_Subset3hour<-Subset3hour %>%
   group_by(trackId) %>%
   summarise(N = n()) %>%
   as.data.frame()
-min(min_Subset3hour$N) #8 random samples
+min(min_Subset3hour$N) #6 random samples
 Samp_Subset3hour <- Subset3hour %>% 
   group_by(trackId) %>% 
-  sample_n(8) 
+  sample_n(6) 
 
 min_Subset1day<-Subset1day %>%
   group_by(trackId) %>%
@@ -638,7 +654,16 @@ min(min_Subset1day$N) #1 random samples
 Samp_Subset1day <- Subset1day %>% 
   group_by(trackId) %>% 
   sample_n(1) 
+```
 
+
+## Data Analysis of Subset 1
+
+#### Exploratory data analysis
+
+> Start by summarizing the raw data
+
+```{r}
 #explore signal means
 Subset1hour$frequency<-paste("1hour")
 Subset3hour$frequency<-paste("3hour")
@@ -735,14 +760,207 @@ FPT<-ggplot(comparison, aes(x=FPT, y = frequency)) +
   xlab("First Passage Time (hrs)")
 
 grid.arrange(speed, TS, TA, FPT, nrow = 4)
+
+#absolute angle remains rather constant in mean and range, with some deviation in the quartiles. Most robust of the measurements. Speed range, mean, and quartiles all differ at each frequency. Differences in means is driven by differences in speed measurements with mean speed decreasing between 1-hour and 1-day. At 3-days mean speed is largest. The upper range of speed decreases consistently across time. Turn speed and FPT means remain similar across frequency. Turn speed upper and lower range decreases as frequency becomes coarser. First passage time upper range increases as frequency becomes courser. Turn speed influences the dispersion of data the most, while speed influences the mean. 
 ```
 
+> Next find differences between group means so that I can relate real values to effect sizes and determine which signals are influencing differences. 
 
-## Data Analysis of Subset 1
+```{r}
+# Dataframe of means for each migration event at each frequency
+means_migrationEvent<-data.frame()
+for (i in unique(comparison$frequency)) {
+  x <- comparison %>%
+  filter(frequency == i) %>%
+  group_by(migrationEvent) %>%
+  summarize(speed_mean = mean(speed),
+            abs_angle_mean = mean(abs_angle),
+            turn_speed_mean = mean(turn_speed),
+            FPT_mean = mean(FPT))
+  x$frequency <- paste(i)
+  means_migrationEvent<-rbind(means_migrationEvent, x)
+}
 
-#### Exploratory data analysis
+Diff_migrationEvent<- means_migrationEvent %>%
+  group_by(frequency) %>%
+  summarize(Speed_Max = max(speed_mean),
+            Speed_Min = min(speed_mean),
+            TS_Max = max(turn_speed_mean),
+            TS_Min = min(turn_speed_mean),
+            TA_Max = max(abs_angle_mean),
+            TA_Min = min(abs_angle_mean),
+            FPT_Max = max(FPT_mean),
+            FPT_Min = min(FPT_mean),
+            FPT_Dif = FPT_Max - FPT_Min,
+            TA_Dif = TA_Max - TA_Min,
+            TS_Dif = TS_Max - TS_Min, 
+            Speed_Dif = Speed_Max - Speed_Min
+            )
+Diff_migrationEvent
 
-> Scale/normalize data for PERMANOVA. I scaled data since distance matrixs are heavily influenced by variable measurement sizes. Measurements at a larger scale (such as between 50 to 200) will overshadow measurements at a lower scale (such as 0 - 1). 
+# Dataframe of means for each Individual
+means_Individual<-data.frame()
+for (i in unique(comparison$frequency)) {
+  x <- comparison %>%
+  filter(frequency == i) %>%
+  group_by(Indvidual) %>%
+  summarize(speed_mean = mean(speed),
+            abs_angle_mean = mean(abs_angle),
+            turn_speed_mean = mean(turn_speed),
+            FPT_mean = mean(FPT))
+  x$frequency <- paste(i)
+  means_Individual<-rbind(means_Individual, x)
+}
+means_Individual
+
+Diff_Individual<- means_Individual %>%
+  group_by(frequency) %>%
+  summarize(Speed_Max = max(speed_mean),
+            Speed_Min = min(speed_mean),
+            TS_Max = max(turn_speed_mean),
+            TS_Min = min(turn_speed_mean),
+            TA_Max = max(abs_angle_mean),
+            TA_Min = min(abs_angle_mean),
+            FPT_Max = max(FPT_mean),
+            FPT_Min = min(FPT_mean),
+            FPT_Dif = FPT_Max - FPT_Min,
+            TA_Dif = TA_Max - TA_Min,
+            TS_Dif = TS_Max - TS_Min, 
+            Speed_Dif = Speed_Max - Speed_Min
+            )
+Diff_Individual
+
+# Dataframe of means for each region
+means_Region<-data.frame()
+for (i in unique(comparison$frequency)) {
+  x <- comparison %>%
+  filter(frequency == i) %>%
+  group_by(Segment) %>%
+  summarize(speed_mean = mean(speed),
+            abs_angle_mean = mean(abs_angle),
+            turn_speed_mean = mean(turn_speed),
+            FPT_mean = mean(FPT))
+  x$frequency <- paste(i)
+  means_Region<-rbind(means_Region, x)
+}
+means_Region
+
+Diff_Region<- means_Region %>%
+  group_by(frequency) %>%
+  summarize(Speed_Max = max(speed_mean),
+            Speed_Min = min(speed_mean),
+            TS_Max = max(turn_speed_mean),
+            TS_Min = min(turn_speed_mean),
+            TA_Max = max(abs_angle_mean),
+            TA_Min = min(abs_angle_mean),
+            FPT_Max = max(FPT_mean),
+            FPT_Min = min(FPT_mean),
+            FPT_Dif = FPT_Max - FPT_Min,
+            TA_Dif = TA_Max - TA_Min,
+            TS_Dif = TS_Max - TS_Min, 
+            Speed_Dif = Speed_Max - Speed_Min
+            )
+Diff_Region
+```
+
+> Find differences between ranges for some idea about the differences in dispersion. 
+
+```{r}
+# Dataframe of means for each migration event at each frequency
+range_migrationEvent<-data.frame()
+for (i in unique(comparison$frequency)) {
+  x <- comparison %>%
+  filter(frequency == i) %>%
+  group_by(migrationEvent) %>%
+  summarize(speed_range = max(speed) - min(speed),
+            abs_angle_range = max(abs_angle) - min(abs_angle),
+            turn_speed_range = max(turn_speed) - min(turn_speed),
+            FPT_range = max(FPT) - min(FPT))
+  x$frequency <- paste(i)
+  range_migrationEvent<-rbind(range_migrationEvent, x)
+}
+
+DiffR_migrationEvent<- range_migrationEvent %>%
+  group_by(frequency) %>%
+  summarize(Speed_Max = max(speed_range),
+            Speed_Min = min(speed_range),
+            TS_Max = max(turn_speed_range),
+            TS_Min = min(turn_speed_range),
+            TA_Max = max(abs_angle_range),
+            TA_Min = min(abs_angle_range),
+            FPT_Max = max(FPT_range),
+            FPT_Min = min(FPT_range),
+            FPT_DifR = FPT_Max - FPT_Min,
+            TA_DifR = TA_Max - TA_Min,
+            TS_DifR = TS_Max - TS_Min, 
+            Speed_DifR = Speed_Max - Speed_Min
+            )
+DiffR_migrationEvent
+
+# Dataframe of means for each Individual
+range_Ind<-data.frame()
+for (i in unique(comparison$frequency)) {
+  x <- comparison %>%
+  filter(frequency == i) %>%
+  group_by(Indvidual) %>%
+  summarize(speed_range = max(speed) - min(speed),
+            abs_angle_range = max(abs_angle) - min(abs_angle),
+            turn_speed_range = max(turn_speed) - min(turn_speed),
+            FPT_range = max(FPT) - min(FPT))
+  x$frequency <- paste(i)
+  range_Ind<-rbind(range_Ind, x)
+}
+
+DiffR_Ind<- range_Ind %>%
+  group_by(frequency) %>%
+  summarize(Speed_Max = max(speed_range),
+            Speed_Min = min(speed_range),
+            TS_Max = max(turn_speed_range),
+            TS_Min = min(turn_speed_range),
+            TA_Max = max(abs_angle_range),
+            TA_Min = min(abs_angle_range),
+            FPT_Max = max(FPT_range),
+            FPT_Min = min(FPT_range),
+            FPT_DifR = FPT_Max - FPT_Min,
+            TA_DifR = TA_Max - TA_Min,
+            TS_DifR = TS_Max - TS_Min, 
+            Speed_DifR = Speed_Max - Speed_Min
+            )
+DiffR_Ind
+
+# Dataframe of means for each region
+range_region<-data.frame()
+for (i in unique(comparison$frequency)) {
+  x <- comparison %>%
+  filter(frequency == i) %>%
+  group_by(Segment) %>%
+  summarize(speed_range = max(speed) - min(speed),
+            abs_angle_range = max(abs_angle) - min(abs_angle),
+            turn_speed_range = max(turn_speed) - min(turn_speed),
+            FPT_range = max(FPT) - min(FPT))
+  x$frequency <- paste(i)
+  range_region<-rbind(range_region, x)
+}
+
+DiffR_region<- range_region %>%
+  group_by(frequency) %>%
+  summarize(Speed_Max = max(speed_range),
+            Speed_Min = min(speed_range),
+            TS_Max = max(turn_speed_range),
+            TS_Min = min(turn_speed_range),
+            TA_Max = max(abs_angle_range),
+            TA_Min = min(abs_angle_range),
+            FPT_Max = max(FPT_range),
+            FPT_Min = min(FPT_range),
+            FPT_DifR = FPT_Max - FPT_Min,
+            TA_DifR = TA_Max - TA_Min,
+            TS_DifR = TS_Max - TS_Min, 
+            Speed_DifR = Speed_Max - Speed_Min
+            )
+DiffR_region
+```
+
+> Scale/normalize data for PERMANOVA. I scaled data since I am using multivariate statistics that require distance matrixs. Distance matrices are heavily influenced by variable measurement sizes. Measurements at a larger scale (such as between 50 to 200) will overshadow measurements at a lower scale (such as 0 - 1). 
 
 ```{r}
 Norm_1hour<- as.data.frame(scale(Samp_Subset1hour[2:5]))
@@ -758,11 +976,10 @@ Norm_1day<-cbind(Norm_1day, Samp_Subset1day$trackId, Samp_Subset1day$Indvidual, 
 colnames(Norm_1day)<-c("speed", "abs_angle", "turn_speed", "FPT", "SegmentID", "Individual", "Mig_Year", "Segment", "migrationEvent", "Starting_Location")
 ```
 
-> First I will look at the distribution of variables/characteristics for each individual for each sampling frequency using Q-Q plots. The distribution of my data for each individual will determine the kinds of tests I employ later on. 
+> Next, I will look at the distribution of normalized variables/characteristics using histograms and Q-Q plots. A non-normal distribution requires non-parametric approaches. 
 
 ```{r}
 #1-hour
-#Histograms...I'm not putting the entire code for all histograms. I ran histograms on normalized data
 hist(Norm_1hour$speed)
 hist(Norm_1hour$abs_angle)
 hist(Norm_1hour$turn_speed)
@@ -771,91 +988,61 @@ qqPlot(Norm_1hour$speed)
 qqPlot(Norm_1hour$abs_angle)
 qqPlot(Norm_1hour$turn_speed)
 qqPlot(Norm_1hour$FPT)
+#non-normal for all variables
 
-#More Q-Q plots...Again not putting all this code in cause running all this code may crash R and take up way to much of your time. When you look at the distribution of dataset 2, change  migrationEvent to Region.
-table(Norm_1hour$migrationEvent)
-migrationEvents<-unique(Norm_1hour$migrationEvent)
-for (i in migrationEvents) {
-  x<-filter(Norm_1hour, migrationEvent == i)
-  y<-x[,c(1:4)]
-  for (j in 1:ncol(y)) {
-    qqPlot(y[, j], main = names(y)[j])
-  }
-}
-mshapiro<-data.frame()
-for (i in migrationEvents) {
-  x<-filter(Norm_1hour, migrationEvent == i)
-  y<-mshapiro_test(x[1:4])
-  mshapiro<-rbind(mshapiro, y)
-} #very not normal...
-
-#3-hour
+#3-hours
 hist(Norm_3hour$speed)
 hist(Norm_3hour$abs_angle)
 hist(Norm_3hour$turn_speed)
 hist(Norm_3hour$FPT)
-for (i in migrationEvents) {
-  x<-filter(Norm_3hour, migrationEvent == i)
-  y<-x[,c(1:4)]
-  for (j in 1:ncol(y)) {
-    qqPlot(y[, j], main = names(y)[j])
-  }
-}
-Norm_3hour %>%
-  group_by(migrationEvent) %>%
-  shapiro_test(speed, abs_angle, turn_speed, FPT) %>%
-  arrange(variable) #mostly non-normally distributed
-mshapiro2<-data.frame()
-for (i in migrationEvents) {
-  x<-filter(Norm_3hour, migrationEvent == i)
-  y<-mshapiro_test(x[1:4])
-  mshapiro2<-rbind(mshapiro2, y)
-}#still very not normal...
-mshapiro2
+qqPlot(Norm_3hour$speed)
+qqPlot(Norm_3hour$abs_angle)
+qqPlot(Norm_3hour$turn_speed)
+qqPlot(Norm_3hour$FPT)
+#non-normal for most variables. Speed looking a bit more normal than the rest.
 
 #1-day
 hist(Norm_1day$speed)
 hist(Norm_1day$abs_angle)
 hist(Norm_1day$turn_speed)
 hist(Norm_1day$FPT)
-for (i in migrationEvents) {
-  x<-filter(Norm_1day, migrationEvent == i)
-  y<-x[,c(1:4)]
-  for (j in 1:ncol(y)) {
-    qqPlot(y[, j], main = names(y)[j])
-  }
-}
-#can't use mshapiro cause I don't have enough data...
+qqPlot(Norm_1day$speed)
+qqPlot(Norm_1day$abs_angle)
+qqPlot(Norm_1day$turn_speed)
+qqPlot(Norm_1day$FPT)
+#absolute angle non-normal, although the data is becoming more normally distributed with coarser sampling frequency. 
+
+#Multivariate normality using modified Shapiro-Wilk's test
+mshapiro_test(Norm_1hour[1:4]) 
+mshapiro_test(Norm_3hour[1:4])
+mshapiro_test(Norm_1day[1:4])
+# reject null hypothesis of normal distribution because of low p-value for all frequencies
 ```
 
 >PCA - subset 1
 
 ```{r}
 #1-hour
-colors_Events<-colorRampPalette(c("#E0AA20", "#ECC713", "#F1E306", "#17E48B","#1BA554", "#268E74", "#0B68FF", "#182DD4", "#073C73", "#39056F"))(16)
-colors_Ind<-colorRampPalette(c("#E0AA20", "#ECC713", "#F1E306", "#17E48B","#1BA554", "#268E74", "#0B68FF", "#182DD4", "#073C73", "#39056F"))(8)
-
 EventsPCA_1hour<-PCA(Norm_1hour[,1:4], scale = F, graph = F)
-EventsPCA_1hour$var
 fviz_screeplot(EventsPCA_1hour, addlabels = TRUE, title = "1-hour") +
   theme(legend.position = "none", 
         axis.title.x = element_text(margin = margin(t = 30), size = 15),
         axis.title.y = element_text(margin = margin(r = 30), size = 15),
         axis.text = element_text(size = 15))
 #Loadings plot, size = 938 x 697
-fviz_pca_var(EventsPCA_1hour,
-             col.var =  "cos2", arrowsize = 1.5, repel = T,
-             title = " ") +
-  theme(legend.position = "right", legend.key.height = unit(2, 'cm'),
+LoadingPlot_1hour<-fviz_pca_var(EventsPCA_1hour,
+             col.var =  "cos2", arrowsize = 1.5, repel = T, #change to repel = T to add labels to graph
+             title = "1-hour") +
+  theme(legend.position = "none", legend.key.height = unit(2, 'cm'),
         axis.title.x = element_text(margin = margin(t = 30), size = 15),
         axis.title.y = element_text(margin = margin(r = 30), size = 15),
-        axis.text = element_text(size = 15)) +
+        axis.text = element_text(size = 15),
+        plot.title = element_text(hjust = 0.5)) +
   scale_color_gradient2(low = "red", mid = "blue", high = "green", 
                         midpoint = 0.5, limits = c(0,1)) +
   xlim(c(-1,1)) +
   ylim(c(-1,1))
 #Contribution of variables to each PC
-library(corrplot)
 contrib_1hour<-get_pca_var(EventsPCA_1hour)
 colnames(contrib_1hour$contrib)<- c("PC1", "PC2", "PC3", "PC4")
 rownames(contrib_1hour$contrib)<- c("Speed", "Abs. Angle", "Turn Speed", "FPT")
@@ -876,13 +1063,13 @@ corrplot(contrib_1hour$contrib, method = 'color',
          number.digits = 0
          )
 #Score Plot for migration events
-fviz_pca_ind(EventsPCA_1hour,
+ScorePlot_1hour_ME <-fviz_pca_ind(EventsPCA_1hour,
              geom.ind = "none",
              palette = colors_Events,
              col.ind = as.factor(Norm_1hour$migrationEvent),
              addEllipses = T, 
              mean.point = T,
-             ellipse.alpha = 0.05,
+             ellipse.alpha = 0,
              mean.point.size = 2,
              scaleshape = "none",
              title = " "
@@ -895,13 +1082,13 @@ fviz_pca_ind(EventsPCA_1hour,
   scale_shape_manual(values = c(64,64,36,36,35,35,17,17,7,7,15,15,16,16,8,8))
 
 #Score plot for individuals
-fviz_pca_ind(EventsPCA_1hour,
+ScorePlot_1hour_Ind<-fviz_pca_ind(EventsPCA_1hour,
              geom.ind = "none",
              palette = colors_Ind,
              col.ind = as.factor(Norm_1hour$Individual),
              addEllipses = T, 
              mean.point = T,
-             ellipse.alpha = 0.05,
+             ellipse.alpha = 0,
              mean.point.size = 2,
              scaleshape = "none",
              title = " "
@@ -915,13 +1102,13 @@ fviz_pca_ind(EventsPCA_1hour,
   scale_shape_manual(values = c(64,36,35,17,7,15,16,8))
 
 #Score plot for regions
-fviz_pca_ind(EventsPCA_1hour,
+ScorePlot_1hour_Region<-fviz_pca_ind(EventsPCA_1hour,
              geom.ind = "none",
              palette = c("#3816E6", "#1ABF51", "#2CD2B6"),
              col.ind = as.factor(Norm_1hour$Segment),
              addEllipses = T, 
              mean.point = T,
-             ellipse.alpha = 0.05,
+             ellipse.alpha = 0,
              mean.point.size = 4,
              scaleshape = "none",
              title = " "
@@ -943,13 +1130,14 @@ fviz_screeplot(EventsPCA_3hour, addlabels = TRUE, title = "3-hour") +
         axis.title.y = element_text(margin = margin(r = 30), size = 15),
         axis.text = element_text(size = 15))
 #Loadings plot
-fviz_pca_var(EventsPCA_3hour,
+LoadingPlot_3hour<-fviz_pca_var(EventsPCA_3hour,
              col.var =  "cos2", arrowsize = 1.5, label = F,
-             title = " ") +
+             title = "3-hours") +
   theme(legend.position = "none", 
         axis.title.x = element_text(margin = margin(t = 30), size = 15),
         axis.title.y = element_text(margin = margin(r = 30), size = 15),
-        axis.text = element_text(size = 15)) +
+        axis.text = element_text(size = 15),
+        plot.title = element_text(hjust = 0.5)) +
   scale_color_gradient2(low = "red", mid = "blue", high = "green", 
                         midpoint = 0.5, limits = c(0,1)) +
   xlim(c(-1,1)) +
@@ -975,13 +1163,13 @@ corrplot(contrib_3hour$contrib, method = 'color',
          number.digits = 0
          )
 #Events score plot
-fviz_pca_ind(EventsPCA_3hour,
+ScorePlot_3hour_ME<-fviz_pca_ind(EventsPCA_3hour,
              geom.ind = "none",
              palette = colors_Events,
              col.ind = as.factor(Norm_3hour$migrationEvent),
              addEllipses = T, 
              mean.point = T,
-             ellipse.alpha = 0.05,
+             ellipse.alpha = 0,
              mean.point.size = 2,
              scaleshape = "none",
              title = " "
@@ -994,13 +1182,13 @@ fviz_pca_ind(EventsPCA_3hour,
   scale_shape_manual(values = c(64,64,36,36,35,35,17,17,7,7,15,15,16,16,8,8))
 
 #Individual Score Plot
-fviz_pca_ind(EventsPCA_3hour,
+ScorePlot_3hour_Ind<-fviz_pca_ind(EventsPCA_3hour,
              geom.ind = "none",
              palette = colors_Ind,
              col.ind = as.factor(Norm_3hour$Individual),
              addEllipses = T, 
              mean.point = T,
-             ellipse.alpha = 0.05,
+             ellipse.alpha = 0,
              mean.point.size = 2,
              scaleshape = "none",
              title = " "
@@ -1013,13 +1201,13 @@ fviz_pca_ind(EventsPCA_3hour,
   scale_shape_manual(values = c(64,36,35,17,7,15,16,8))
 
 #Regions score plot
-fviz_pca_ind(EventsPCA_3hour,
+ScorePlot_3hour_Region<-fviz_pca_ind(EventsPCA_3hour,
              geom.ind = "none",
              palette = c("#3816E6", "#1ABF51", "#2CD2B6"),
              col.ind = as.factor(Norm_3hour$Segment),
              addEllipses = T, 
              mean.point = T,
-             ellipse.alpha = 0.05,
+             ellipse.alpha = 0,
              mean.point.size = 4,
              scaleshape = "none",
              title = " "
@@ -1036,19 +1224,20 @@ fviz_pca_ind(EventsPCA_3hour,
 #1-day
 EventsPCA_1day<-PCA(Norm_1day[,1:4], scale = F, graph = F)
 EventsPCA_1day$var
-fviz_screeplot(EventsPCA_1hour, addlabels = TRUE, title = "1-day") +
+fviz_screeplot(EventsPCA_1day, addlabels = TRUE, title = "1-day") +
   theme(legend.position = "none", 
         axis.title.x = element_text(margin = margin(t = 30), size = 15),
         axis.title.y = element_text(margin = margin(r = 30), size = 15),
         axis.text = element_text(size = 15))
 #Loadings plot
-fviz_pca_var(EventsPCA_1day,
+LoadingPlot_1day<-fviz_pca_var(EventsPCA_1day,
              col.var =  "cos2", arrowsize = 1.5, label = F,
-             title = " ") +
+             title = "1-day") +
   theme(legend.position = "none", 
         axis.title.x = element_text(margin = margin(t = 30), size = 15),
         axis.title.y = element_text(margin = margin(r = 30), size = 15),
-        axis.text = element_text(size = 15)) +
+        axis.text = element_text(size = 15),
+        plot.title = element_text(hjust = 0.5)) +
   scale_color_gradient2(low = "red", mid = "blue", high = "green", 
                         midpoint = 0.5, limits = c(0,1))+
   xlim(c(-1,1)) +
@@ -1074,7 +1263,7 @@ corrplot(contrib_1day$contrib, method = 'color',
          number.digits = 0
          )
 #Event score plots
-fviz_pca_ind(EventsPCA_1day,
+ScorePlot_1day_ME<-fviz_pca_ind(EventsPCA_1day,
              geom.ind = "point",
              palette = colors_Events,
              col.ind = as.factor(Norm_1day$migrationEvent),
@@ -1083,7 +1272,7 @@ fviz_pca_ind(EventsPCA_1day,
              scaleshape = "none",
              title = " "
              ) +
-  theme(legend.position = "bottom", 
+  theme(legend.position = "none", 
         axis.title.x = element_text(margin = margin(t = 30), size = 15),
         axis.title.y = element_text(margin = margin(r = 30), size = 15),
         axis.text = element_text(size = 15)) +
@@ -1092,13 +1281,13 @@ fviz_pca_ind(EventsPCA_1day,
   scale_shape_manual(values = c(64,64,36,36,35,35,17,17,7,7,15,15,16,16,8,8))
 
 #Individual Score Plot
-fviz_pca_ind(EventsPCA_1day,
+ScorePlot_1day_Ind<-fviz_pca_ind(EventsPCA_1day,
              geom.ind = "none",
              palette = colors_Ind,
              col.ind = as.factor(Norm_1day$Individual),
              addEllipses = T, 
              mean.point = T,
-             ellipse.alpha = 0.05,
+             ellipse.alpha = 0,
              mean.point.size = 2,
              scaleshape = "none",
              title = " "
@@ -1111,13 +1300,13 @@ fviz_pca_ind(EventsPCA_1day,
   scale_shape_manual(values = c(64,36,35,17,7,15,16,8))
 
 #region score plots
-fviz_pca_ind(EventsPCA_1day,
+ScorePlot_1day_Region<-fviz_pca_ind(EventsPCA_1day,
              geom.ind = "none",
              palette = c("#3816E6", "#1ABF51", "#2CD2B6"),
              col.ind = as.factor(Norm_1day$Segment),
              addEllipses = T, 
              mean.point = T,
-             ellipse.alpha = 0.05,
+             ellipse.alpha = 0,
              mean.point.size = 4,
              scaleshape = "none",
              title = " "
@@ -1128,9 +1317,15 @@ fviz_pca_ind(EventsPCA_1day,
         axis.text = element_text(size = 15)) +
   scale_shape_identity() +
   scale_shape_manual(values = c(15,16,17))
-
-#+ xlim(c(-5,5)) + ylim(c(-3,3))
 ```
+
+```{r}
+grid.arrange(LoadingPlot_1hour, LoadingPlot_3hour, LoadingPlot_1day, nrow = 3)
+grid.arrange(ScorePlot_1hour_ME, ScorePlot_3hour_ME, ScorePlot_1day_ME, nrow = 2)
+grid.arrange(ScorePlot_1hour_Ind, ScorePlot_3hour_Ind, ScorePlot_1day_Ind, nrow = 2)
+grid.arrange(ScorePlot_1hour_Region, ScorePlot_3hour_Region, ScorePlot_1day_Region, nrow = 2)
+```
+
 
 #### PERMANOVA and PERMDISP
 
@@ -1149,9 +1344,9 @@ mod_event <- betadisper(dis, Norm_1hour$migrationEvent, type = "centroid")
 mod_Segment <- betadisper(dis, Norm_1hour$Segment, type = "centroid")
 mod_Ind <- betadisper(dis, Norm_1hour$Individual, type = "centroid")
 #Test the homogeneity of dispersion between groups. If the p-value is > 0.05, then the assumptions of PERMANOVA are met: the null hypothesis is that overall dispersion between groups is not different.
-permutest(mod_event)
-permutest(mod_Segment)
-permutest(mod_Ind) #Not significant = Individuals do not have different dispersions
+permutest(mod_event) # small effect size, sig p-value
+permutest(mod_Segment) # insignificant p-value
+permutest(mod_Ind) # small effect size, sig p-value
 
 #post-hoc for dispersions
 dispersions_event<-TukeyHSD(mod_event)
@@ -1161,12 +1356,12 @@ dispersions_m_event_t<-t(dispersions_m_event)
 dispersions_m_event_t[is.na(dispersions_m_event_t)]<- 1
 dispersions_event_1hr<-dispersions_m_event*dispersions_m_event_t
 
-dispersions_segment<-TukeyHSD(mod_Segment)
-dispersions_m_segment<-tukey_to_matrix(dispersions_segment$group) #make into a matrix for corrplot
-dispersions_m_segment[is.na(dispersions_m_segment)]<- 1
-dispersions_m_segment_t<-t(dispersions_m_segment)
-dispersions_m_segment_t[is.na(dispersions_m_segment_t)]<- 1
-dispersions_segment_1hr<-dispersions_m_segment*dispersions_m_segment_t
+dispersions_Ind<-TukeyHSD(mod_Ind)
+dispersions_m_Ind<-tukey_to_matrix(dispersions_Ind$group) #make into a matrix for corrplot
+dispersions_m_Ind[is.na(dispersions_m_Ind)]<- 1
+dispersions_m_Ind_t<-t(dispersions_m_Ind)
+dispersions_m_Ind_t[is.na(dispersions_m_Ind_t)]<- 1
+dispersions_Ind_1hr<-dispersions_m_Ind*dispersions_m_Ind_t
 
 #Make heatmaps
 Heatmap(dispersions_event_1hr, name = "p-value", 
@@ -1179,9 +1374,9 @@ Heatmap(dispersions_event_1hr, name = "p-value",
         color_space = c(0,1),
         rect_gp = gpar(col = "grey80", lwd = 0.5),
         heatmap_legend_param = list(legend_height = unit(12, "cm"))) #export size is 1500 x 1160
+#Belle_2016 and North Fork Bob 2014 have the most differences. Belle_2016 had a very wide range of values, while North Fork bob 2014 has a narrow range of values. They represent opposite ends of a spectrum. Donovan and Edwin have a moderate number of differences, largely with the same individuals. 
 
-dispersions_segment_1hr
-Heatmap(dispersions_segment_1hr, name = "p-value", 
+Heatmap(dispersions_Ind_1hr, name = "p-value", 
         row_names_gp = gpar(fontsize = 10),
         column_names_gp= gpar(fontsize = 10),
         cluster_rows = F,
@@ -1191,6 +1386,7 @@ Heatmap(dispersions_segment_1hr, name = "p-value",
         color_space = c(0,1),
         rect_gp = gpar(col = "grey80", lwd = 0.5),
         heatmap_legend_param = list(legend_height = unit(12, "cm"))) #export size is 1500 x 1160
+#Edwin and Donovan differ from most other birds. Interesting that NFB and Belle don't differ even though they had differing migration events. 
 ```
 
 ```{r}
@@ -1203,9 +1399,47 @@ mod_event_3 <- betadisper(dis3, Norm_3hour$migrationEvent, type = "centroid")
 mod_Segment_3 <- betadisper(dis3, Norm_3hour$Segment, type = "centroid")
 mod_Ind_3 <- betadisper(dis3, Norm_3hour$Individual, type = "centroid")
 #Test the homogeneity of dispersion between groups. If the p-value is > 0.05, then the assumptions of PERMANOVA are met: the null hypothesis is that overall dispersion between groups is not different.
-permutest(mod_event_3)
-permutest(mod_Segment_3)
-permutest(mod_Ind_3)
+permutest(mod_event_3) # medium effect size with sig difference
+permutest(mod_Segment_3) # no sig difference
+permutest(mod_Ind_3) # Small effect size with sig difference. 
+
+#post-hoc for dispersions
+dispersions_event3<-TukeyHSD(mod_event_3)
+dispersions_m_event3<-tukey_to_matrix(dispersions_event3$group) #make into a matrix for corrplot
+dispersions_m_event3[is.na(dispersions_m_event3)]<- 1
+dispersions_m_event_t3<-t(dispersions_m_event3)
+dispersions_m_event_t3[is.na(dispersions_m_event_t3)]<- 1
+dispersions_event_3hr<-dispersions_m_event3*dispersions_m_event_t3
+
+dispersions_Ind3<-TukeyHSD(mod_Ind_3)
+dispersions_m_Ind3<-tukey_to_matrix(dispersions_Ind3$group) #make into a matrix for corrplot
+dispersions_m_Ind3[is.na(dispersions_m_Ind3)]<- 1
+dispersions_m_Ind_t3<-t(dispersions_m_Ind3)
+dispersions_m_Ind_t3[is.na(dispersions_m_Ind_t3)]<- 1
+dispersions_Ind_3hr<-dispersions_m_Ind3*dispersions_m_Ind_t3
+
+#Make heatmaps
+Heatmap(dispersions_event_3hr, name = "p-value", 
+        row_names_gp = gpar(fontsize = 15),
+        column_names_gp= gpar(fontsize = 15),
+        cluster_rows = F,
+        cluster_columns = F,
+        col = colorRamp2(breaks = c(0,0.5,0.5000001, 1), 
+                    colors = c("red", "red","cadetblue3", "cadetblue3")),
+        color_space = c(0,1),
+        rect_gp = gpar(col = "grey80", lwd = 0.5),
+        heatmap_legend_param = list(legend_height = unit(12, "cm"))) #NFB and Belle have the most differences, followed by Sr. Bones, then Donovan 2014.  
+
+Heatmap(dispersions_Ind_3hr, name = "p-value", 
+        row_names_gp = gpar(fontsize = 10),
+        column_names_gp= gpar(fontsize = 10),
+        cluster_rows = F,
+        cluster_columns = F,
+        col = colorRamp2(breaks = c(0,0.5,0.5000001, 1), 
+                    colors = c("red", "red","cadetblue3", "cadetblue3")),
+        color_space = c(0,1),
+        rect_gp = gpar(col = "grey80", lwd = 0.5),
+        heatmap_legend_param = list(legend_height = unit(12, "cm"))) #Belle, Donovan, Sr. Bones have the most differences. 
 ```
 
 ```{r}
@@ -1218,9 +1452,9 @@ mod_event_24 <- betadisper(dis24, Norm_1day$migrationEvent, type = "centroid")
 mod_Segment_24 <- betadisper(dis24, Norm_1day$Segment, type = "centroid")
 mod_Ind_24 <- betadisper(dis24, Norm_1day$Individual, type = "centroid")
 #Test the homogeneity of dispersion between groups. If the p-value is > 0.05, then the assumptions of PERMANOVA are met: the null hypothesis is that overall dispersion between groups is not different.
-permutest(mod_event_24)
-permutest(mod_Segment_24)
-permutest(mod_Ind_24)
+permutest(mod_event_24) # sig p-value, large effect size
+permutest(mod_Segment_24) #insignificant p-value, small effect size
+permutest(mod_Ind_24) #sig p-value, large effect size
 
 #post-hoc for dispersions
 dispersions_event_24<-TukeyHSD(mod_event_24)
@@ -1248,6 +1482,7 @@ Heatmap(dispersions_event_24hr, name = "p-value",
         color_space = c(0,1),
         rect_gp = gpar(col = "grey80", lwd = 0.5),
         heatmap_legend_param = list(legend_height = unit(12, "cm"))) #export size is 1500 x 1160
+#Mostly Edwin_2013 differs followed by NFB_2013 and Wausau_2015
 
 Heatmap(dispersions_Ind_24hr, name = "p-value", 
         row_names_gp = gpar(fontsize = 15),
@@ -1259,6 +1494,7 @@ Heatmap(dispersions_Ind_24hr, name = "p-value",
         color_space = c(0,1),
         rect_gp = gpar(col = "grey80", lwd = 0.5),
         heatmap_legend_param = list(legend_height = unit(12, "cm"))) #export size is 1500 x 1160
+#Only Edwin differs
 ```
 
 > PERMANOVA
@@ -1266,11 +1502,11 @@ Heatmap(dispersions_Ind_24hr, name = "p-value",
 ```{r}
 #1-hour
 perm_event<-adonis2(dis ~ migrationEvent, data = Norm_1hour, method = "euclidean")
-perm_event
+perm_event #sig p-value, small effect size
 perm_segment<-adonis2(dis ~ Segment, data = Norm_1hour, method = "euclidean")
-perm_segment
+perm_segment #Sig p-value, small effect size
 perm_ind<-adonis2(dis ~ Individual, data = Norm_1hour, method = "euclidean")
-perm_ind
+perm_ind #Sig p-value, small effect size
 
 adonis_OmegaSq(perm_event, partial = T) #Add omega R-squared value (effect size)
 adonis_OmegaSq(perm_segment, partial = T)
@@ -1369,38 +1605,30 @@ Heatmap(pairperm_DF_Individual, name = "p-value",
 #3hours
 set.seed(2016)
 perm_event3<-adonis2(dis3 ~ migrationEvent, data = Norm_3hour, method = "euclidean")
-perm_event3
+perm_event3 #Sig. p-value, medium effect size until you calculate omega-squared
 perm_segment3<-adonis2(dis3 ~ Segment, data = Norm_3hour, method = "euclidean")
-perm_segment3
+perm_segment3 #Sig p-value, small effect size
 perm_ind3<-adonis2(dis3 ~ Individual, data = Norm_3hour, method = "euclidean")
-perm_ind3
+perm_ind3 #sig p-value, small effect size
 
 adonis_OmegaSq(perm_event3, partial = T) #Add omega R-squared value (effect size)
 adonis_OmegaSq(perm_segment3, partial = T)
 adonis_OmegaSq(perm_ind3, partial = T)
-
-#post-hoc tests
-pairperm_segment3<-pairwise.adonis2(dis3 ~ Segment, data = Norm_3hour)
-pairperm_segment3 #report as table
 ```
 
 ```{r}
 #1day
 set.seed(2016)
 perm_event24<-adonis2(dis24 ~ migrationEvent, data = Norm_1day, method = "euclidean")
-perm_event24
+perm_event24 #Insig p-value with large effect size until you use omega-squared
 perm_segment24<-adonis2(dis24 ~ Segment, data = Norm_1day, method = "euclidean")
-perm_segment24
+perm_segment24 #sig p-value with large effect size (medium effect size with omeg-squared)
 perm_ind24<-adonis2(dis24 ~ Individual, data = Norm_1day, method = "euclidean")
-perm_ind24
+perm_ind24 #insig p-value, with medium effect size (small effect size with omega-squared)
 
 adonis_OmegaSq(perm_event24, partial = T) #Add omega R-squared value (effect size)
 adonis_OmegaSq(perm_segment24, partial = T)
 adonis_OmegaSq(perm_ind24, partial = T)
-
-#post-hoc tests
-pairperm_segment24<-pairwise.adonis2(dis24 ~ Segment, data = Norm_1day)
-pairperm_segment24 #report as table
 ```
 
 ## References
