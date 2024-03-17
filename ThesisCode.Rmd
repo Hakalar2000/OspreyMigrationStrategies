@@ -1,11 +1,34 @@
 ---
-title: "Lewis' Thesis Code"
+title: "Sampling Frequency Impact on Interpreation of Osprey Movement Strategies"
 author: "Lewis Hakam"
-output: html_document
+date: "3/14/2024"
+header-includes:
+  \usepackage{fvextra}
+  \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+output: pdf_document
+always_allow_html: true
 ---
 
-```{r setup, include=TRUE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+hook_output = knit_hooks$get('output')
+knit_hooks$set(output = function(x, options) {
+  # this hook is used only when the linewidth option is not NULL
+  if (!is.null(n <- options$linewidth)) {
+    x = xfun::split_lines(x)
+    # any lines wider than n should be wrapped
+    if (any(nchar(x) > n)) x = strwrap(x, width = n)
+    x = paste(x, collapse = '\n')
+  }
+  hook_output(x, options)
+})
+```
+
+> Load packages and functions.
+
+```{r setup, include=TRUE, warning=FALSE, message = FALSE, results='hide', echo=T, results='hide'}
 knitr::opts_chunk$set(echo = TRUE)
+library(formatR) #Rmarkdown format
 library(move) #Download, manipulate, anlayze data from Movebank
 library(sp) #Spatial objects in Movebank
 library(moveVis) #Converting a data frame to a move object
@@ -67,19 +90,20 @@ colors_Ind<-colorRampPalette(c("#E0AA20", "#ECC713", "#F1E306", "#17E48B","#1BA5
 library(ComplexHeatmap) #Correlation plots in R
 library(circlize) #color bar for ComplexHeatmap
 library(stats) #TukeyHSD - package comes with base R
+library(gridExtra) #arranging grids together
+library(ggpubr) #ggarrange, arranging ggplot grids together
 library(rootdetectR) #Making results of TukeyHSD into a matrix
-library(gridExtra) #arranging plots in a grid
 ```
 
 ## Introduction
 
 > Hey there! If you are viewing this, you are interested in how I analyzed osprey tracking data for my final thesis, completed in Spring 2024. I will guide through my step by step process to answer three questions:
 
-> **Do strategies vary between and within individuals?**
-> **Do ospreys use the same migration strategies between regions?**
-> **How does changing the temporal sampling frequency affect the results of my analysis?**
+1. **Do strategies vary between and within individuals?**
+2. **Do ospreys use the same migration strategies between regions?**
+3. **How does changing the temporal sampling frequency affect the results of my analysis?**
 
-> This document was created using R Markdown and will not cover the nuances I used to code the Markdown file (if you want to access the full Markdown script, you can view the file on my Github). For simplicity and privacy, not all code lines are shown in the Rmarkdown output when downloading data. I have done my best to annotate my code for easy interpretation, but this is not a guide on how to use R. Some aspects of coding will *not* be explained.
+> This document was created using R Markdown and will not cover the nuances I used to code the Markdown file (if you want to access the full Markdown script, you can view the file on my Github at <https://github.com/Hakalar2000/OspreyMigrationStrategies>). For privacy, not all code lines are shown in the Rmarkdown output. I have done my best to annotate my code for easy interpretation, but this is not a guide on how to use R. Some aspects of coding will *not* be explained.
 
 
 ## A Note on Installing Packages
@@ -116,7 +140,7 @@ loginStored <- movebankLogin(username = "lhaka2", password = "!ShamaJ2016!")
 * The synopsis can provide details on how many individuals were tracked, the time frame tracking occurred, the type of device(s) used, demographic information (sex, age, etc.), and permission/privacy restrictions. 
 * The summary table will provide a summary of each individual tracked per device. This means that some individuals may have multiple entries in a summary table if they were fitted with more than one transmitter. You can use the summary table info to partially fill out demographic information and determine how many individuals were tracked using GPS or GPS/GSM devices. I kept a running document of individuals with their demographic and geographic information that will come in handy later on. 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, linewidth = 80}
 #download Bierregaard data Synopsis
 reference<-getMovebankStudy(study ="Osprey Bierregaard North and South America", login = loginStored)
 reference$study_objective
@@ -144,7 +168,7 @@ Bierregaard_Osprey_summary<-filter(Bierregaard_Study_summary,
 * GPS fixes outside of July-December (7-12) when osprey are "stationary" or on spring migrations
 * erroneous points that don't meet a defined biological threshold.
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, message=FALSE}
 #Download data from Movebank for GPS tracked individuals.This takes some time. When downloading Movebank data, I can specify which individuals I want in my dataset using animalName = (list of animal local identifiers)
 Bierregaard_Osprey<-getMovebankData(study ="Osprey Bierregaard North and South America",
                                     animalName = c(Bierregaard_Osprey_summary$animal_local_identifier),
@@ -208,7 +232,7 @@ There are a few exceptions to the three segments as some osprey wintered in Flor
 2. Wintering in South/Central America with migration time longer than 3 days in each region
 3. Fixes do not look erroneous
 
-```{r, fig.show="hold", out.width="10%"}
+```{r, fig.show="hold", out.width="30%"}
 #Spatially project the Bierregaard data
 Bierregaard_Osprey_Data_sf<-st_as_sf(x=Bierregaard_Osprey_Data, 
                                      coords = c("location_long.1", "location_lat.1"), crs = wgs84)
@@ -288,7 +312,7 @@ for (i in events) {
   n = filter(y, timestamp <= x$Mig_End & timestamp >= x$Mig_Start)
   Filtered = rbind(Filtered, n)
 }
-str(Filtered) #18,000 fixes left
+#18,000 fixes left. You can check using the str() function. 
 ```
 
 
@@ -296,7 +320,7 @@ str(Filtered) #18,000 fixes left
 
 > Regularized the data. Data was not collected at perfect 1-hour intervals for a 24 hour period. This means that when I calculate trajectory characteristics, points from the end of one day may connect to points at the start of the next day. If the osprey was sleeping during this time period, speed values would be very low and add inaccuracy to my dataset since I am only concerned with active migration. Regularizing will help me pinpoint times when osprey roosted so those points can be taken out later for 1-hour and 3-hour sampling frequencies after calculating trajectory characteristics. There are of course exceptions when osprey cross over open water. In these cases, speed should be high even after dark and will be delt with later. 
 
-```{r, fig.show="hold", out.width="10%"}
+```{r, fig.show="hold", out.width="30%", results='hide'}
 #Convert to a move object. To do this I had to use the moveVis package since converting a DF to a move object with the move function was finicky.
 OSPR<-df2move(Filtered,
         proj = wgs84, 
@@ -351,7 +375,7 @@ length(unique(segs$SegmentID)) #48 segments total (16 x 3)
 
 > Next I will thin my trajectories to 3-hour and 1-day sampling frequencies. I will do this my migration event region rather than migration event. This just streamlines the code more since I will have to take random samples by migration event region later. 
 
-```{r}
+```{r, fig.show='hold', out.width="50%"}
 #First create a move object
 Subset_1hour_move<-df2move(segs,
         proj = wgs84, 
@@ -657,7 +681,7 @@ Samp_Subset1day <- Subset1day %>%
 ```
 
 
-## Data Analysis of Subset 1
+## Data Analysis
 
 #### Exploratory data analysis
 
@@ -796,7 +820,7 @@ Diff_migrationEvent<- means_migrationEvent %>%
             TS_Dif = TS_Max - TS_Min, 
             Speed_Dif = Speed_Max - Speed_Min
             )
-Diff_migrationEvent
+Diff_migrationEvent[c("TS_Dif", "TA_Dif", "FPT_Dif", "Speed_Dif")] 
 
 # Dataframe of means for each Individual
 means_Individual<-data.frame()
@@ -811,7 +835,6 @@ for (i in unique(comparison$frequency)) {
   x$frequency <- paste(i)
   means_Individual<-rbind(means_Individual, x)
 }
-means_Individual
 
 Diff_Individual<- means_Individual %>%
   group_by(frequency) %>%
@@ -828,7 +851,7 @@ Diff_Individual<- means_Individual %>%
             TS_Dif = TS_Max - TS_Min, 
             Speed_Dif = Speed_Max - Speed_Min
             )
-Diff_Individual
+Diff_Individual[c("TS_Dif", "TA_Dif", "FPT_Dif", "Speed_Dif")] 
 
 # Dataframe of means for each region
 means_Region<-data.frame()
@@ -843,7 +866,6 @@ for (i in unique(comparison$frequency)) {
   x$frequency <- paste(i)
   means_Region<-rbind(means_Region, x)
 }
-means_Region
 
 Diff_Region<- means_Region %>%
   group_by(frequency) %>%
@@ -860,7 +882,7 @@ Diff_Region<- means_Region %>%
             TS_Dif = TS_Max - TS_Min, 
             Speed_Dif = Speed_Max - Speed_Min
             )
-Diff_Region
+Diff_Region[c("TS_Dif", "TA_Dif", "FPT_Dif", "Speed_Dif")] 
 ```
 
 > Find differences between ranges for some idea about the differences in dispersion. 
@@ -895,7 +917,7 @@ DiffR_migrationEvent<- range_migrationEvent %>%
             TS_DifR = TS_Max - TS_Min, 
             Speed_DifR = Speed_Max - Speed_Min
             )
-DiffR_migrationEvent
+DiffR_migrationEvent[c("TS_DifR", "TA_DifR", "FPT_DifR", "Speed_DifR")]
 
 # Dataframe of means for each Individual
 range_Ind<-data.frame()
@@ -926,7 +948,7 @@ DiffR_Ind<- range_Ind %>%
             TS_DifR = TS_Max - TS_Min, 
             Speed_DifR = Speed_Max - Speed_Min
             )
-DiffR_Ind
+DiffR_Ind[c("TS_DifR", "TA_DifR", "FPT_DifR", "Speed_DifR")]
 
 # Dataframe of means for each region
 range_region<-data.frame()
@@ -957,7 +979,7 @@ DiffR_region<- range_region %>%
             TS_DifR = TS_Max - TS_Min, 
             Speed_DifR = Speed_Max - Speed_Min
             )
-DiffR_region
+DiffR_region[c("TS_DifR", "TA_DifR", "FPT_DifR", "Speed_DifR")]
 ```
 
 > Scale/normalize data for PERMANOVA. I scaled data since I am using multivariate statistics that require distance matrixs. Distance matrices are heavily influenced by variable measurement sizes. Measurements at a larger scale (such as between 50 to 200) will overshadow measurements at a lower scale (such as 0 - 1). 
@@ -978,7 +1000,7 @@ colnames(Norm_1day)<-c("speed", "abs_angle", "turn_speed", "FPT", "SegmentID", "
 
 > Next, I will look at the distribution of normalized variables/characteristics using histograms and Q-Q plots. A non-normal distribution requires non-parametric approaches. 
 
-```{r}
+```{r, fig.show='hold', out.width="50%"}
 #1-hour
 hist(Norm_1hour$speed)
 hist(Norm_1hour$abs_angle)
@@ -989,7 +1011,9 @@ qqPlot(Norm_1hour$abs_angle)
 qqPlot(Norm_1hour$turn_speed)
 qqPlot(Norm_1hour$FPT)
 #non-normal for all variables
+```
 
+```{r, fig.show='hold', out.width="50%"}
 #3-hours
 hist(Norm_3hour$speed)
 hist(Norm_3hour$abs_angle)
@@ -1000,7 +1024,9 @@ qqPlot(Norm_3hour$abs_angle)
 qqPlot(Norm_3hour$turn_speed)
 qqPlot(Norm_3hour$FPT)
 #non-normal for most variables. Speed looking a bit more normal than the rest.
+```
 
+```{r, fig.show='hold', out.width="50%"}
 #1-day
 hist(Norm_1day$speed)
 hist(Norm_1day$abs_angle)
@@ -1011,7 +1037,9 @@ qqPlot(Norm_1day$abs_angle)
 qqPlot(Norm_1day$turn_speed)
 qqPlot(Norm_1day$FPT)
 #absolute angle non-normal, although the data is becoming more normally distributed with coarser sampling frequency. 
+```
 
+```{r}
 #Multivariate normality using modified Shapiro-Wilk's test
 mshapiro_test(Norm_1hour[1:4]) 
 mshapiro_test(Norm_3hour[1:4])
@@ -1021,21 +1049,21 @@ mshapiro_test(Norm_1day[1:4])
 
 >PCA - subset 1
 
-```{r}
+```{r, fig.show='hold', out.width="50%", message=FALSE, warning=FALSE}
 #1-hour
 EventsPCA_1hour<-PCA(Norm_1hour[,1:4], scale = F, graph = F)
 fviz_screeplot(EventsPCA_1hour, addlabels = TRUE, title = "1-hour") +
   theme(legend.position = "none", 
-        axis.title.x = element_text(margin = margin(t = 30), size = 15),
-        axis.title.y = element_text(margin = margin(r = 30), size = 15),
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
         axis.text = element_text(size = 15))
 #Loadings plot, size = 938 x 697
 LoadingPlot_1hour<-fviz_pca_var(EventsPCA_1hour,
              col.var =  "cos2", arrowsize = 1.5, repel = T, #change to repel = T to add labels to graph
              title = "1-hour") +
   theme(legend.position = "none", legend.key.height = unit(2, 'cm'),
-        axis.title.x = element_text(margin = margin(t = 30), size = 15),
-        axis.title.y = element_text(margin = margin(r = 30), size = 15),
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
         axis.text = element_text(size = 15),
         plot.title = element_text(hjust = 0.5)) +
   scale_color_gradient2(low = "red", mid = "blue", high = "green", 
@@ -1054,13 +1082,13 @@ corrplot(contrib_1hour$contrib, method = 'color',
          tl.col = "black",
          tl.srt = 0,
          tl.offset = 0.5,
-         mar = c(1.5, 1.5, 1.5, 1.5),
-         cl.pos = 'n',
+         mar = c(0.5, 0.5, 0.5, 0.5),
          cl.length = 5,
          col.lim=c(0,100),
-         tl.cex = 3,
-         number.cex = 3,
-         number.digits = 0
+         tl.cex = 1.5,
+         number.cex = 1.5,
+         number.digits = 0,
+         cl.pos="r"
          )
 #Score Plot for migration events
 ScorePlot_1hour_ME <-fviz_pca_ind(EventsPCA_1hour,
@@ -1072,12 +1100,13 @@ ScorePlot_1hour_ME <-fviz_pca_ind(EventsPCA_1hour,
              ellipse.alpha = 0,
              mean.point.size = 2,
              scaleshape = "none",
-             title = " "
+             title = "1-hour"
              ) +
-  theme(legend.position = "bottom", 
-        axis.title.x = element_text(margin = margin(t = 30), size = 15),
-        axis.title.y = element_text(margin = margin(r = 30), size = 15),
+  theme(legend.position = "none", 
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
         axis.text = element_text(size = 15)) +
+  guides(fill=guide_legend(ncol = 2)) +
   scale_shape_identity() +
   scale_shape_manual(values = c(64,64,36,36,35,35,17,17,7,7,15,15,16,16,8,8))
 
@@ -1091,11 +1120,11 @@ ScorePlot_1hour_Ind<-fviz_pca_ind(EventsPCA_1hour,
              ellipse.alpha = 0,
              mean.point.size = 2,
              scaleshape = "none",
-             title = " "
+             title = "1-hour"
              ) +
-  theme(legend.position = "bottom",
-        axis.title.x = element_text(margin = margin(t = 30), size = 15),
-        axis.title.y = element_text(margin = margin(r = 30), size = 15),
+  theme(legend.position = "none", #change to bottom or right to add legend
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
         axis.text = element_text(size = 15)) +
   guides(color = guide_legend(nrow = 4))+
   scale_shape_identity() +
@@ -1111,31 +1140,31 @@ ScorePlot_1hour_Region<-fviz_pca_ind(EventsPCA_1hour,
              ellipse.alpha = 0,
              mean.point.size = 4,
              scaleshape = "none",
-             title = " "
+             title = "1-hour"
              ) +
-  theme(legend.position = "bottom", 
-        axis.title.x = element_text(margin = margin(t = 30), size = 15),
-        axis.title.y = element_text(margin = margin(r = 30), size = 15),
+  theme(legend.position = "none", 
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
         axis.text = element_text(size = 15)) +
+  guides(fill=guide_legend(ncol = 3)) +
   scale_shape_identity() +
   scale_shape_manual(values = c(15,16,17))
 ```
 
-```{r}
+```{r, fig.show='hold', out.width="50%", message=FALSE, warning=FALSE}
 EventsPCA_3hour<-PCA(Norm_3hour[,1:4], scale = F, graph = F)
-EventsPCA_3hour$var
 fviz_screeplot(EventsPCA_3hour, addlabels = TRUE, title = "3-hour") +
   theme(legend.position = "none", 
-        axis.title.x = element_text(margin = margin(t = 30), size = 15),
-        axis.title.y = element_text(margin = margin(r = 30), size = 15),
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
         axis.text = element_text(size = 15))
 #Loadings plot
 LoadingPlot_3hour<-fviz_pca_var(EventsPCA_3hour,
-             col.var =  "cos2", arrowsize = 1.5, label = F,
+             col.var =  "cos2", arrowsize = 1.5, repel = T,
              title = "3-hours") +
   theme(legend.position = "none", 
-        axis.title.x = element_text(margin = margin(t = 30), size = 15),
-        axis.title.y = element_text(margin = margin(r = 30), size = 15),
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
         axis.text = element_text(size = 15),
         plot.title = element_text(hjust = 0.5)) +
   scale_color_gradient2(low = "red", mid = "blue", high = "green", 
@@ -1154,13 +1183,13 @@ corrplot(contrib_3hour$contrib, method = 'color',
          tl.col = "black",
          tl.srt = 0,
          tl.offset = 0.5,
-         mar = c(1.5, 1.5, 1.5, 1.5),
-         cl.pos = 'n',
+         mar = c(0.5, 0.5, 0.5, 0.5),
          cl.length = 5,
          col.lim=c(0,100),
-         tl.cex = 3,
-         number.cex = 3,
-         number.digits = 0
+         tl.cex = 1.5,
+         number.cex = 1.5,
+         number.digits = 0,
+         cl.pos="r"
          )
 #Events score plot
 ScorePlot_3hour_ME<-fviz_pca_ind(EventsPCA_3hour,
@@ -1172,11 +1201,11 @@ ScorePlot_3hour_ME<-fviz_pca_ind(EventsPCA_3hour,
              ellipse.alpha = 0,
              mean.point.size = 2,
              scaleshape = "none",
-             title = " "
+             title = "3-hour"
              ) +
   theme(legend.position = "none", 
-        axis.title.x = element_text(margin = margin(t = 30), size = 15),
-        axis.title.y = element_text(margin = margin(r = 30), size = 15),
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
         axis.text = element_text(size = 15)) +
   scale_shape_identity() +
   scale_shape_manual(values = c(64,64,36,36,35,35,17,17,7,7,15,15,16,16,8,8))
@@ -1191,11 +1220,11 @@ ScorePlot_3hour_Ind<-fviz_pca_ind(EventsPCA_3hour,
              ellipse.alpha = 0,
              mean.point.size = 2,
              scaleshape = "none",
-             title = " "
+             title = "3-hour"
              ) +
   theme(legend.position = "none", 
-        axis.title.x = element_text(margin = margin(t = 30), size = 15),
-        axis.title.y = element_text(margin = margin(r = 30), size = 15),
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
         axis.text = element_text(size = 15)) +
   scale_shape_identity() +
   scale_shape_manual(values = c(64,36,35,17,7,15,16,8))
@@ -1210,32 +1239,31 @@ ScorePlot_3hour_Region<-fviz_pca_ind(EventsPCA_3hour,
              ellipse.alpha = 0,
              mean.point.size = 4,
              scaleshape = "none",
-             title = " "
+             title = "3-hour"
              ) +
   theme(legend.position = "none", 
-        axis.title.x = element_text(margin = margin(t = 30), size = 15),
-        axis.title.y = element_text(margin = margin(r = 30), size = 15),
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
         axis.text = element_text(size = 15)) +
   scale_shape_identity() +
   scale_shape_manual(values = c(15,16,17))
 ```
 
-```{r}
+```{r, fig.show='hold', out.width="50%", message=FALSE, warning=FALSE}
 #1-day
 EventsPCA_1day<-PCA(Norm_1day[,1:4], scale = F, graph = F)
-EventsPCA_1day$var
 fviz_screeplot(EventsPCA_1day, addlabels = TRUE, title = "1-day") +
   theme(legend.position = "none", 
-        axis.title.x = element_text(margin = margin(t = 30), size = 15),
-        axis.title.y = element_text(margin = margin(r = 30), size = 15),
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
         axis.text = element_text(size = 15))
 #Loadings plot
 LoadingPlot_1day<-fviz_pca_var(EventsPCA_1day,
-             col.var =  "cos2", arrowsize = 1.5, label = F,
+             col.var =  "cos2", arrowsize = 1.5, repel = T,
              title = "1-day") +
   theme(legend.position = "none", 
-        axis.title.x = element_text(margin = margin(t = 30), size = 15),
-        axis.title.y = element_text(margin = margin(r = 30), size = 15),
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
         axis.text = element_text(size = 15),
         plot.title = element_text(hjust = 0.5)) +
   scale_color_gradient2(low = "red", mid = "blue", high = "green", 
@@ -1254,13 +1282,13 @@ corrplot(contrib_1day$contrib, method = 'color',
          tl.col = "black",
          tl.srt = 0,
          tl.offset = 0.5,
-         mar = c(1.5, 1.5, 1.5, 1.5),
-         cl.pos = 'n',
+         mar = c(0.5, 0.5, 0.5, 0.5),
          cl.length = 5,
          col.lim=c(0,100),
-         tl.cex = 3,
-         number.cex = 3,
-         number.digits = 0
+         tl.cex = 1.5,
+         number.cex = 1.5,
+         number.digits = 0,
+         cl.pos="r"
          )
 #Event score plots
 ScorePlot_1day_ME<-fviz_pca_ind(EventsPCA_1day,
@@ -1270,11 +1298,11 @@ ScorePlot_1day_ME<-fviz_pca_ind(EventsPCA_1day,
              mean.point = T,
              mean.point.size = 3,
              scaleshape = "none",
-             title = " "
+             title = "1-day"
              ) +
   theme(legend.position = "none", 
-        axis.title.x = element_text(margin = margin(t = 30), size = 15),
-        axis.title.y = element_text(margin = margin(r = 30), size = 15),
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
         axis.text = element_text(size = 15)) +
   guides(color=guide_legend(nrow=8,byrow=TRUE)) +
   scale_shape_identity() +
@@ -1290,11 +1318,11 @@ ScorePlot_1day_Ind<-fviz_pca_ind(EventsPCA_1day,
              ellipse.alpha = 0,
              mean.point.size = 2,
              scaleshape = "none",
-             title = " "
+             title = "1-day"
              ) +
   theme(legend.position = "none", 
-        axis.title.x = element_text(margin = margin(t = 30), size = 15),
-        axis.title.y = element_text(margin = margin(r = 30), size = 15),
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
         axis.text = element_text(size = 15)) +
   scale_shape_identity() +
   scale_shape_manual(values = c(64,36,35,17,7,15,16,8))
@@ -1309,27 +1337,96 @@ ScorePlot_1day_Region<-fviz_pca_ind(EventsPCA_1day,
              ellipse.alpha = 0,
              mean.point.size = 4,
              scaleshape = "none",
-             title = " "
+             title = "1-day"
              ) +
   theme(legend.position = "none", 
-        axis.title.x = element_text(margin = margin(t = 30), size = 15),
-        axis.title.y = element_text(margin = margin(r = 30), size = 15),
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
         axis.text = element_text(size = 15)) +
   scale_shape_identity() +
   scale_shape_manual(values = c(15,16,17))
 ```
 
-```{r}
-grid.arrange(LoadingPlot_1hour, LoadingPlot_3hour, LoadingPlot_1day, nrow = 3)
-grid.arrange(ScorePlot_1hour_ME, ScorePlot_3hour_ME, ScorePlot_1day_ME, nrow = 2)
-grid.arrange(ScorePlot_1hour_Ind, ScorePlot_3hour_Ind, ScorePlot_1day_Ind, nrow = 2)
-grid.arrange(ScorePlot_1hour_Region, ScorePlot_3hour_Region, ScorePlot_1day_Region, nrow = 2)
+> Display plots for thesis paper. Code for extracting legends not included.
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+#Loadings plot, size = 938 x 697
+ScorePlot_1hour_ME_legend <-fviz_pca_ind(EventsPCA_1hour,
+             geom.ind = "none",
+             palette = colors_Events,
+             col.ind = as.factor(Norm_1hour$migrationEvent),
+             addEllipses = T, 
+             mean.point = T,
+             ellipse.alpha = 0,
+             mean.point.size = 2,
+             scaleshape = "none",
+             title = "1-hour"
+             ) +
+  theme(legend.position = "right", 
+        axis.title.x = element_text(margin = margin(t = 30), size = 15),
+        axis.title.y = element_text(margin = margin(r = 30), size = 15),
+        axis.text = element_text(size = 15),
+        legend.text=element_text(size=15)) +
+  guides(color=guide_legend(ncol = 2)) +
+  scale_shape_identity() +
+  scale_shape_manual(values = c(64,64,36,36,35,35,17,17,7,7,15,15,16,16,8,8))
+leg_scoreME <- get_legend(ScorePlot_1hour_ME_legend)
+
+ScorePlot_1hour_Ind_legend<-fviz_pca_ind(EventsPCA_1hour,
+             geom.ind = "none",
+             palette = colors_Ind,
+             col.ind = as.factor(Norm_1hour$Individual),
+             addEllipses = T, 
+             mean.point = T,
+             ellipse.alpha = 0,
+             mean.point.size = 2,
+             scaleshape = "none",
+             title = "1-hour"
+             ) +
+  theme(legend.position = "right", #change to bottom or right to add legend
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
+        axis.text = element_text(size = 15),
+        legend.text=element_text(size=15)) +
+  guides(color=guide_legend(ncol = 1)) +
+  scale_shape_identity() +
+  scale_shape_manual(values = c(64,36,35,17,7,15,16,8))
+leg_scoreInd <- get_legend(ScorePlot_1hour_Ind_legend)
+
+ScorePlot_1hour_Region_legend<-fviz_pca_ind(EventsPCA_1hour,
+             geom.ind = "none",
+             palette = c("#3816E6", "#1ABF51", "#2CD2B6"),
+             col.ind = as.factor(Norm_1hour$Segment),
+             addEllipses = T, 
+             mean.point = T,
+             ellipse.alpha = 0,
+             mean.point.size = 4,
+             scaleshape = "none",
+             title = "1-hour"
+             ) +
+  theme(legend.position = "right", 
+        axis.title.x = element_text(margin = margin(t = 10), size = 15),
+        axis.title.y = element_text(margin = margin(r = 10), size = 15),
+        axis.text = element_text(size = 15),
+        legend.text=element_text(size=15)) +
+  guides(color=guide_legend(ncol = 1)) +
+  scale_shape_identity() +
+  scale_shape_manual(values = c(15,16,17))
+leg_scoreRegion <- get_legend(ScorePlot_1hour_Region_legend)
+```
+
+
+```{r, fig.width=unit(10,"cm"), fig.height=unit(12,"cm")}
+ggarrange(LoadingPlot_1hour, LoadingPlot_3hour, LoadingPlot_1day, ncol=2, nrow=2, common.legend = TRUE, legend="right")
+ggarrange(ScorePlot_1hour_ME, ScorePlot_3hour_ME, ScorePlot_1day_ME, leg_scoreME, ncol=2, nrow=2)
+ggarrange(ScorePlot_1hour_Ind, ScorePlot_3hour_Ind, ScorePlot_1day_Ind, leg_scoreInd, ncol=2, nrow=2)
+ggarrange(ScorePlot_1hour_Region, ScorePlot_3hour_Region, ScorePlot_1day_Region, leg_scoreRegion, ncol=2, nrow=2)
 ```
 
 
 #### PERMANOVA and PERMDISP
 
-> Many variables do not seem normally distributed. To avoid issues with normal distribution assumptions, I will use a non-parametric test. Since I am comparing groups that each have multiple variables, I will use a PERMANOVA and PERMDISP. To start, you will first need to see if you data meets the PERMANOVA dispersion assumptions. Interpretation of p-values will be heavily influenced based on whether the assumptions of PERMANOVA are met.
+> Many variables do not seem normally distributed. To avoid issues with normal distribution assumptions, I will use a non-parametric test. Since I am comparing groups that each have multiple variables, I will use a PERMANOVA and PERMDISP. To start, you will first need to see if you data meets the PERMANOVA dispersion assumptions. Interpretation of p-values will be heavily influenced based on whether the assumptions of PERMANOVA are met. You will have to manually calculate eta-squared by dividing the factor's SS/Total SS. Also note that these statistics will not be discussed in depth in this document. For a further dicussion on the limitations and methods used, see my thesis paper.
 
 > PERMDISP
 
@@ -1356,13 +1453,6 @@ dispersions_m_event_t<-t(dispersions_m_event)
 dispersions_m_event_t[is.na(dispersions_m_event_t)]<- 1
 dispersions_event_1hr<-dispersions_m_event*dispersions_m_event_t
 
-dispersions_Ind<-TukeyHSD(mod_Ind)
-dispersions_m_Ind<-tukey_to_matrix(dispersions_Ind$group) #make into a matrix for corrplot
-dispersions_m_Ind[is.na(dispersions_m_Ind)]<- 1
-dispersions_m_Ind_t<-t(dispersions_m_Ind)
-dispersions_m_Ind_t[is.na(dispersions_m_Ind_t)]<- 1
-dispersions_Ind_1hr<-dispersions_m_Ind*dispersions_m_Ind_t
-
 #Make heatmaps
 Heatmap(dispersions_event_1hr, name = "p-value", 
         row_names_gp = gpar(fontsize = 15),
@@ -1373,20 +1463,8 @@ Heatmap(dispersions_event_1hr, name = "p-value",
                     colors = c("red", "red","cadetblue3", "cadetblue3")),
         color_space = c(0,1),
         rect_gp = gpar(col = "grey80", lwd = 0.5),
-        heatmap_legend_param = list(legend_height = unit(12, "cm"))) #export size is 1500 x 1160
+        heatmap_legend_param = list(legend_height = unit(6, "cm"))) #export size is 1500 x 1160
 #Belle_2016 and North Fork Bob 2014 have the most differences. Belle_2016 had a very wide range of values, while North Fork bob 2014 has a narrow range of values. They represent opposite ends of a spectrum. Donovan and Edwin have a moderate number of differences, largely with the same individuals. 
-
-Heatmap(dispersions_Ind_1hr, name = "p-value", 
-        row_names_gp = gpar(fontsize = 10),
-        column_names_gp= gpar(fontsize = 10),
-        cluster_rows = F,
-        cluster_columns = F,
-        col = colorRamp2(breaks = c(0,0.5,0.5000001, 1), 
-                    colors = c("red", "red","cadetblue3", "cadetblue3")),
-        color_space = c(0,1),
-        rect_gp = gpar(col = "grey80", lwd = 0.5),
-        heatmap_legend_param = list(legend_height = unit(12, "cm"))) #export size is 1500 x 1160
-#Edwin and Donovan differ from most other birds. Interesting that NFB and Belle don't differ even though they had differing migration events. 
 ```
 
 ```{r}
@@ -1411,13 +1489,6 @@ dispersions_m_event_t3<-t(dispersions_m_event3)
 dispersions_m_event_t3[is.na(dispersions_m_event_t3)]<- 1
 dispersions_event_3hr<-dispersions_m_event3*dispersions_m_event_t3
 
-dispersions_Ind3<-TukeyHSD(mod_Ind_3)
-dispersions_m_Ind3<-tukey_to_matrix(dispersions_Ind3$group) #make into a matrix for corrplot
-dispersions_m_Ind3[is.na(dispersions_m_Ind3)]<- 1
-dispersions_m_Ind_t3<-t(dispersions_m_Ind3)
-dispersions_m_Ind_t3[is.na(dispersions_m_Ind_t3)]<- 1
-dispersions_Ind_3hr<-dispersions_m_Ind3*dispersions_m_Ind_t3
-
 #Make heatmaps
 Heatmap(dispersions_event_3hr, name = "p-value", 
         row_names_gp = gpar(fontsize = 15),
@@ -1428,18 +1499,7 @@ Heatmap(dispersions_event_3hr, name = "p-value",
                     colors = c("red", "red","cadetblue3", "cadetblue3")),
         color_space = c(0,1),
         rect_gp = gpar(col = "grey80", lwd = 0.5),
-        heatmap_legend_param = list(legend_height = unit(12, "cm"))) #NFB and Belle have the most differences, followed by Sr. Bones, then Donovan 2014.  
-
-Heatmap(dispersions_Ind_3hr, name = "p-value", 
-        row_names_gp = gpar(fontsize = 10),
-        column_names_gp= gpar(fontsize = 10),
-        cluster_rows = F,
-        cluster_columns = F,
-        col = colorRamp2(breaks = c(0,0.5,0.5000001, 1), 
-                    colors = c("red", "red","cadetblue3", "cadetblue3")),
-        color_space = c(0,1),
-        rect_gp = gpar(col = "grey80", lwd = 0.5),
-        heatmap_legend_param = list(legend_height = unit(12, "cm"))) #Belle, Donovan, Sr. Bones have the most differences. 
+        heatmap_legend_param = list(legend_height = unit(6, "cm"))) #NFB and Belle have the most differences, followed by Sr. Bones, then Donovan 2014.  
 ```
 
 ```{r}
@@ -1464,13 +1524,6 @@ dispersions_m_event_24_t<-t(dispersions_m_event_24)
 dispersions_m_event_24_t[is.na(dispersions_m_event_24_t)]<- 1
 dispersions_event_24hr<-dispersions_m_event_24*dispersions_m_event_24_t
 
-dispersions_Ind_24<-TukeyHSD(mod_Ind_24)
-dispersions_m_Ind_24<-tukey_to_matrix(dispersions_Ind_24$group) #make into a matrix for corrplot
-dispersions_m_Ind_24[is.na(dispersions_m_Ind_24)]<- 1
-dispersions_m_Ind_24_t<-t(dispersions_m_Ind_24)
-dispersions_m_Ind_24_t[is.na(dispersions_m_Ind_24_t)]<- 1
-dispersions_Ind_24hr<-dispersions_m_Ind_24*dispersions_m_Ind_24_t
-
 #Make heatmaps
 Heatmap(dispersions_event_24hr, name = "p-value", 
         row_names_gp = gpar(fontsize = 15),
@@ -1481,20 +1534,8 @@ Heatmap(dispersions_event_24hr, name = "p-value",
                     colors = c("red", "red","cadetblue3", "cadetblue3")),
         color_space = c(0,1),
         rect_gp = gpar(col = "grey80", lwd = 0.5),
-        heatmap_legend_param = list(legend_height = unit(12, "cm"))) #export size is 1500 x 1160
+        heatmap_legend_param = list(legend_height = unit(6, "cm"))) #export size is 1500 x 1160
 #Mostly Edwin_2013 differs followed by NFB_2013 and Wausau_2015
-
-Heatmap(dispersions_Ind_24hr, name = "p-value", 
-        row_names_gp = gpar(fontsize = 15),
-        column_names_gp= gpar(fontsize = 15),
-        cluster_rows = F,
-        cluster_columns = F,
-        col = colorRamp2(breaks = c(0,0.5,0.5000001, 1), 
-                    colors = c("red", "red","cadetblue3", "cadetblue3")),
-        color_space = c(0,1),
-        rect_gp = gpar(col = "grey80", lwd = 0.5),
-        heatmap_legend_param = list(legend_height = unit(12, "cm"))) #export size is 1500 x 1160
-#Only Edwin differs
 ```
 
 > PERMANOVA
@@ -1556,7 +1597,7 @@ Heatmap(pairperm_DF_event, name = "p-value",
                     colors = c("red", "red","cadetblue3", "cadetblue3")),
         color_space = c(0,1),
         rect_gp = gpar(col = "grey80", lwd = 0.5),
-        heatmap_legend_param = list(legend_height = unit(12, "cm")))
+        heatmap_legend_param = list(legend_height = unit(6, "cm")))
 
 #post-hoc test - individual
 pairperm_Ind<-pairwise.adonis2(dis ~ Individual, data = Norm_1hour)
@@ -1598,7 +1639,7 @@ Heatmap(pairperm_DF_Individual, name = "p-value",
                     colors = c("red", "red","cadetblue3", "cadetblue3")),
         color_space = c(0,1),
         rect_gp = gpar(col = "grey80", lwd = 0.5),
-        heatmap_legend_param = list(legend_height = unit(12, "cm")))
+        heatmap_legend_param = list(legend_height = unit(6, "cm")))
 ```
 
 ```{r}
@@ -1614,6 +1655,10 @@ perm_ind3 #sig p-value, small effect size
 adonis_OmegaSq(perm_event3, partial = T) #Add omega R-squared value (effect size)
 adonis_OmegaSq(perm_segment3, partial = T)
 adonis_OmegaSq(perm_ind3, partial = T)
+
+pairperm_segment3<-pairwise.adonis2(dis3 ~ Segment, data = Norm_3hour)
+pairperm_segment3
+#No other post-hoc tests needed.
 ```
 
 ```{r}
@@ -1629,17 +1674,9 @@ perm_ind24 #insig p-value, with medium effect size (small effect size with omega
 adonis_OmegaSq(perm_event24, partial = T) #Add omega R-squared value (effect size)
 adonis_OmegaSq(perm_segment24, partial = T)
 adonis_OmegaSq(perm_ind24, partial = T)
+
+pairperm_segment24<-pairwise.adonis2(dis24 ~ Segment, data = Norm_1day)
+pairperm_segment24
+#No other post-hoc tests needed.
 ```
-
-## References
-
-* Help using the move package to download data from Movebank: <https://cran.r-project.org/web/packages/move/vignettes/browseMovebank.html> 
-* Navigating and using data from the move package: <https://cran.r-project.org/web/packages/move/vignettes/move.html>
-* Download a CSV file from github: <https://lokraj.me/post/download-github-data/>
-* Github and RStudio interface: <https://rfortherestofus.com/2021/02/how-to-use-git-github-with-r/>
-* Finding mode in R: <https://www.statology.org/mode-in-r/>
-* Projections in R: <https://www.nceas.ucsb.edu/sites/default/files/2020-04/OverviewCoordinateReferenceSystems.pdf>
-* adehabitatLT use (not the vignette): <http://www.r-gators.com/2018/01/31/wildlife-tracking-data-in-r/>
-
-
 
